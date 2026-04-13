@@ -1,0 +1,79 @@
+import { StyleSheet } from 'react-native';
+import { Colors } from '../GlobalStyles';
+
+export const dashboardScreenStyles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: Colors.deepBlue },
+  page: {
+    padding: 18,
+    paddingBottom: 56,
+    backgroundColor: Colors.deepBlue,
+  },
+  kicker: {
+    color: Colors.gold,
+    textAlign: 'center',
+    letterSpacing: 1,
+    fontSize: 11,
+    opacity: 0.9,
+    marginTop: 6,
+  },
+  block: {
+    borderWidth: 1,
+    borderColor: 'rgba(228,195,38,0.24)',
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: 14,
+    backgroundColor: 'rgba(38,17,51,0.82)',
+  },
+  blockTitle: {
+    color: Colors.gold,
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  baseText: {
+    color: Colors.text,
+    fontSize: 14,
+    lineHeight: 21,
+    marginBottom: 6,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: 'transparent',
+    marginTop: 8,
+  },
+  signImage: {
+    width: '40%',
+    height: 90,
+  },
+  arcanoImage: {
+    width: '45%',
+    height: 120,
+  },
+  previsao: {
+    color: '#f2e7ff',
+    fontSize: 15,
+    marginTop: 4,
+    lineHeight: 24,
+  },
+  previsaoLabel: {
+    color: Colors.gold,
+    fontSize: 13,
+    fontWeight: '700',
+    marginTop: 10,
+    letterSpacing: 0.6,
+  },
+  cardTitle: {
+    color: Colors.gold,
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  readingCardImage: {
+    width: '100%',
+    height: 170,
+    marginBottom: 6,
+  },
+  footnote: { color: Colors.gray, marginTop: 10, textAlign: 'center' },
+});

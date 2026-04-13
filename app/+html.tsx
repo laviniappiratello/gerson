@@ -29,10 +29,29 @@ export default function Root({ children }: { children: React.ReactNode }) {
 
 const responsiveBackground = `
 body {
-  background-color: #fff;
+  background-color: #0f0918;
+  color: #f5efff;
 }
 @media (prefers-color-scheme: dark) {
   body {
-    background-color: #000;
+    background-color: #0f0918;
   }
-}`;
+}
+
+input,
+textarea {
+  background-color: rgba(9, 5, 15, 0.38);
+  color: #f5efff;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px rgba(9, 5, 15, 0.38) inset;
+  -webkit-text-fill-color: #f5efff;
+  transition: background-color 9999s ease-in-out 0s;
+}
+`;
