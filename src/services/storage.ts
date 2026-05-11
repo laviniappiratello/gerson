@@ -4,6 +4,8 @@ import { Platform } from 'react-native';
 import type { SignoNome } from '../../constants/OraculoData';
 import { database } from '../database';
 
+export type DeckId = 'rider-waite' | 'cigano' | 'marselha';
+
 export type UserProfile = {
   id: string;
   nome: string;
@@ -26,7 +28,11 @@ export type ReadingRecord = {
   userId: string;
   question: string;
   cards: CardDraw[];
+  deckId?: DeckId;
+  cardCount?: number;
+  note?: string;
   createdAt: number;
+  favorite: boolean;
 };
 
 const USER_KEY = '@persephone/user';
@@ -54,7 +60,11 @@ type RawReading = {
   user_id: string;
   question: string;
   cards: string;
+  deck_id?: string;
+  card_count?: number;
+  note?: string;
   created_at: number;
+  favorite?: boolean;
 };
 
 function normalizeEmail(email: string) {
@@ -80,7 +90,28 @@ function mapRawReading(raw: RawReading): ReadingRecord {
     userId: raw.user_id,
     question: raw.question,
     cards: JSON.parse(raw.cards) as CardDraw[],
+    deckId: raw.deck_id as DeckId | undefined,
+    cardCount: raw.card_count,
+    note: raw.note ?? '',
     createdAt: raw.created_at,
+    favorite: raw.favorite ?? false,
+  };
+}
+
+function inferDeckId(cards: CardDraw[]): DeckId {
+  const firstCardId = cards[0]?.cardId ?? 0;
+  if (firstCardId >= 200) return 'marselha';
+  if (firstCardId >= 100) return 'cigano';
+  return 'rider-waite';
+}
+
+function normalizeReading(reading: ReadingRecord): ReadingRecord {
+  return {
+    ...reading,
+    deckId: reading.deckId ?? inferDeckId(reading.cards),
+    cardCount: reading.cardCount ?? reading.cards.length,
+    note: reading.note ?? '',
+    favorite: reading.favorite ?? false,
   };
 }
 
@@ -261,25 +292,31 @@ export async function hasSeenOnboarding(): Promise<boolean> {
 }
 
 export async function addReading(reading: ReadingRecord) {
+  const normalizedReading = normalizeReading(reading);
+
   if (hasDb) {
     const readings = database.get('readings');
     await database.write(async () => {
       await readings.create((record: any) => {
-        if (reading.id) {
-          record._raw.id = reading.id;
+        if (normalizedReading.id) {
+          record._raw.id = normalizedReading.id;
         }
-        record._raw.user_id = reading.userId;
-        record._raw.question = reading.question;
-        record._raw.cards = JSON.stringify(reading.cards);
-        record._raw.created_at = reading.createdAt;
+        record._raw.user_id = normalizedReading.userId;
+        record._raw.question = normalizedReading.question;
+        record._raw.cards = JSON.stringify(normalizedReading.cards);
+        record._raw.deck_id = normalizedReading.deckId ?? null;
+        record._raw.card_count = normalizedReading.cardCount ?? normalizedReading.cards.length;
+        record._raw.note = normalizedReading.note ?? '';
+        record._raw.created_at = normalizedReading.createdAt;
+        record._raw.favorite = normalizedReading.favorite;
       });
     });
     return;
   }
 
-  const key = getUserReadingsKey(reading.userId);
-  const list = await getReadings(reading.userId);
-  const next = [reading, ...list].slice(0, 40);
+  const key = getUserReadingsKey(normalizedReading.userId);
+  const list = await getReadings(normalizedReading.userId);
+  const next = [normalizedReading, ...list].slice(0, 40);
   await AsyncStorage.setItem(key, JSON.stringify(next));
 }
 
@@ -297,13 +334,12 @@ export async function getReadings(userId?: string): Promise<ReadingRecord[]> {
     const key = getUserReadingsKey(userId);
     const userRaw = await AsyncStorage.getItem(key);
     if (userRaw) {
-      return JSON.parse(userRaw) as ReadingRecord[];
+      return (JSON.parse(userRaw) as ReadingRecord[]).map(normalizeReading);
     }
 
-    // Backward compatibility: migrate readings from the old shared key.
     const legacyRaw = await AsyncStorage.getItem(READINGS_KEY);
     const legacyAll = legacyRaw ? (JSON.parse(legacyRaw) as ReadingRecord[]) : [];
-    const migrated = legacyAll.filter((reading) => reading.userId === userId);
+    const migrated = legacyAll.filter((reading) => reading.userId === userId).map(normalizeReading);
     if (migrated.length > 0) {
       await AsyncStorage.setItem(key, JSON.stringify(migrated.slice(0, 40)));
     }
@@ -311,7 +347,61 @@ export async function getReadings(userId?: string): Promise<ReadingRecord[]> {
   }
 
   const raw = await AsyncStorage.getItem(READINGS_KEY);
-  return raw ? (JSON.parse(raw) as ReadingRecord[]) : [];
+  return raw ? (JSON.parse(raw) as ReadingRecord[]).map(normalizeReading) : [];
+}
+
+export async function setReadingFavorite(userId: string, readingId: string, favorite: boolean) {
+  if (hasDb) {
+    const readings = database.get('readings');
+    const record = await readings.find(readingId).catch(() => null as any);
+    if (!record) return false;
+
+    await database.write(async () => {
+      await record.update((item: any) => {
+        item._raw.favorite = favorite;
+      });
+    });
+
+    return true;
+  }
+
+  const key = getUserReadingsKey(userId);
+  const list = await getReadings(userId);
+  const next = list.map((item) => (item.id === readingId ? { ...item, favorite } : item));
+  await AsyncStorage.setItem(key, JSON.stringify(next));
+  return true;
+}
+
+export async function setReadingNote(userId: string, readingId: string, note: string) {
+  const cleanedNote = note.trim();
+
+  if (hasDb) {
+    const readings = database.get('readings');
+    const record = await readings.find(readingId).catch(() => null as any);
+    if (!record) return false;
+
+    await database.write(async () => {
+      await record.update((item: any) => {
+        item._raw.note = cleanedNote;
+      });
+    });
+
+    return true;
+  }
+
+  const key = getUserReadingsKey(userId);
+  const list = await getReadings(userId);
+  const next = list.map((item) => (item.id === readingId ? { ...item, note: cleanedNote } : item));
+  await AsyncStorage.setItem(key, JSON.stringify(next));
+  return true;
+}
+
+export async function toggleReadingFavorite(userId: string, readingId: string) {
+  const list = await getReadings(userId);
+  const current = list.find((item) => item.id === readingId);
+  if (!current) return false;
+
+  return setReadingFavorite(userId, readingId, !current.favorite);
 }
 
 export function makeId(prefix: string) {

@@ -36,6 +36,27 @@ export const dashboardScreenStyles = StyleSheet.create({
     lineHeight: 21,
     marginBottom: 6,
   },
+  tipsHighlight: {
+    marginTop: 10,
+    padding: 12,
+    borderRadius: 14,
+    backgroundColor: 'rgba(228,195,38,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(228,195,38,0.18)',
+  },
+  tipsHighlightLabel: {
+    color: Colors.gold,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginBottom: 6,
+  },
+  tipsHighlightText: {
+    color: '#f2e7ff',
+    fontSize: 14,
+    lineHeight: 22,
+  },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',

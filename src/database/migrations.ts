@@ -11,5 +11,35 @@ export const migrations = schemaMigrations({
         }),
       ],
     },
+    {
+      toVersion: 3,
+      steps: [
+        addColumns({
+          table: 'readings',
+          columns: [{ name: 'favorite', type: 'boolean' }],
+        }),
+      ],
+    },
+    {
+      toVersion: 4,
+      steps: [
+        addColumns({
+          table: 'readings',
+          columns: [
+            { name: 'deck_id', type: 'string' },
+            { name: 'card_count', type: 'number' },
+          ],
+        }),
+      ],
+    },
+    {
+      toVersion: 5,
+      steps: [
+        addColumns({
+          table: 'readings',
+          columns: [{ name: 'note', type: 'string' }],
+        }),
+      ],
+    },
   ],
 });

@@ -4,6 +4,7 @@ import { Image, ScrollView } from 'react-native';
 import { INFO_ARCANOS, INFO_SIGNOS } from '../../constants/MisticoData';
 import { TAROT_CARDS, getPrevisaoDoDia } from '../../constants/OraculoData';
 import { useAuth } from '../../src/context/AuthContext';
+import { DicasDoDiaCard } from '../../src/features/oraculos/DicasDoDiaCard';
 import { globalStyles as GStyles } from '../../src/styles/GlobalStyles';
 import { dashboardScreenStyles as styles } from '../../src/styles/screens/DashboardScreenStyles';
 
@@ -50,6 +51,8 @@ export default function DashboardScreen() {
         <Text style={styles.previsaoLabel}>PREVISAO DO DIA:</Text>
         <Text style={styles.previsao}>{previsao}</Text>
       </View>
+
+      <DicasDoDiaCard signo={user.signo} />
 
       <View style={styles.block}>
         <Text style={styles.blockTitle}>Carta do Dia</Text>

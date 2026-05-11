@@ -47,6 +47,16 @@ export const tiragemScreenStyles = StyleSheet.create({
     textAlignVertical: 'top',
     backgroundColor: 'rgba(12,7,20,0.38)',
   },
+  selectorLabel: {
+    color: Colors.text,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    marginBottom: 6,
+    marginTop: 4,
+    textTransform: 'uppercase',
+    opacity: 0.8,
+  },
   questionText: {
     color: '#fff',
     fontSize: 14,
@@ -78,6 +88,15 @@ export const tiragemScreenStyles = StyleSheet.create({
     marginBottom: 8,
     backgroundColor: 'rgba(12,7,20,0.34)',
   },
+  dropdownItemHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  dropdownItemMain: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    marginRight: 10,
+  },
   dropdownItemActive: {
     borderColor: 'rgba(228,195,38,0.7)',
     backgroundColor: 'rgba(46,22,61,0.8)',
@@ -91,6 +110,31 @@ export const tiragemScreenStyles = StyleSheet.create({
     color: Colors.text,
     fontSize: 13,
   },
+  favoriteButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(228,195,38,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(228,195,38,0.18)',
+  },
+  favoriteButtonText: {
+    color: Colors.gray,
+    fontSize: 18,
+  },
+  favoriteButtonTextActive: {
+    color: Colors.gold,
+  },
+  favoriteTag: {
+    color: Colors.gold,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+    marginTop: 6,
+    textTransform: 'uppercase',
+  },
   card: {
     borderWidth: 1,
     borderColor: 'rgba(228,195,38,0.22)',
@@ -98,6 +142,27 @@ export const tiragemScreenStyles = StyleSheet.create({
     padding: 10,
     marginBottom: 10,
     backgroundColor: 'rgba(12,7,20,0.42)',
+  },
+  noteBlock: {
+    marginTop: 8,
+    paddingTop: 4,
+  },
+  noteTitle: {
+    color: Colors.gold,
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  noteInput: {
+    borderWidth: 1,
+    borderColor: 'rgba(228,195,38,0.2)',
+    borderRadius: 16,
+    minHeight: 110,
+    padding: 14,
+    color: Colors.text,
+    marginBottom: 10,
+    textAlignVertical: 'top',
+    backgroundColor: 'rgba(12,7,20,0.38)',
   },
   cardTitle: {
     color: Colors.gold,
@@ -108,5 +173,24 @@ export const tiragemScreenStyles = StyleSheet.create({
     width: '100%',
     height: 170,
     marginBottom: 6,
+  },
+
+  favoritesSectionButton: {
+    backgroundColor: 'rgba(228,195,38,0.06)',
+    borderColor: 'rgba(228,195,38,0.3)',
+  },
+  nestedDropdownList: {
+    marginBottom: 8,
+    paddingLeft: 12,
+    backgroundColor: 'transparent',
+  },
+  demaisTiragensSectionTitle: {
+    color: Colors.gold,
+    fontSize: 13,
+    fontWeight: '600',
+    marginTop: 8,
+    marginBottom: 8,
+    paddingHorizontal: 4,
+    opacity: 0.8,
   },
 });
