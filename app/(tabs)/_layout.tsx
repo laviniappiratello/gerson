@@ -67,6 +67,20 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <MaterialIcons name="menu-book" color={color} size={22} />,
         }}
       />
+      <Tabs.Screen
+        name="rituais"
+        options={{
+          title: 'Rituais',
+          tabBarIcon: ({ color }) => <Ionicons name="sparkles" color={color} size={22} />,
+        }}
+      />
+      <Tabs.Screen
+        name="mapa-astral"
+        options={{
+          title: 'Mapa',
+          tabBarIcon: ({ color }) => <Ionicons name="planet" color={color} size={22} />,
+        }}
+      />
     </Tabs>
   );
 }
