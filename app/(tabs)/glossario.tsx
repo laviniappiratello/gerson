@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 import { Image, ScrollView, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
 import { INFO_DECKS } from '../../constants/MisticoData';
 import { CIGANO_CARDS, MARSELHA_CARDS, TAROT_CARDS_COMPLETO } from '../../constants/OraculoData';
+import { useAuth } from '../../src/context/AuthContext';
+import { useFavoriteCards } from '../../src/hooks/useFavoriteCards';
 import { Colors, globalStyles as GStyles } from '../../src/styles/GlobalStyles';
 
 type DeckKey = keyof typeof INFO_DECKS;
@@ -31,10 +33,13 @@ const DECKS: Array<{ id: DeckKey; cards: GlossaryCard[] }> = [
 ];
 
 export default function GlossarioScreen() {
+  const { user } = useAuth();
+  const { isFavorited, handleToggleFavorite } = useFavoriteCards(user?.id ?? null);
   const [openDeckId, setOpenDeckId] = useState<DeckKey | null>(null);
   const [selectedCardKey, setSelectedCardKey] = useState<string | null>(null);
   const [searchText, setSearchText] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -58,6 +63,15 @@ export default function GlossarioScreen() {
         />
       </View>
 
+      <TouchableOpacity
+        style={[styles.filterButton, showOnlyFavorites && styles.filterButtonActive]}
+        onPress={() => setShowOnlyFavorites((prev) => !prev)}
+      >
+        <Text style={[styles.filterButtonText, showOnlyFavorites && styles.filterButtonTextActive]}>
+          {showOnlyFavorites ? '★ Apenas Favoritos' : '☆ Ver Todas'}
+        </Text>
+      </TouchableOpacity>
+
       <View style={styles.block}>
         <Text style={styles.baseText}>Abra um baralho para ver as cartas e toque em uma carta para expandir os detalhes.</Text>
       </View>
@@ -79,6 +93,7 @@ export default function GlossarioScreen() {
               <View style={styles.cardList}>
                 {deck.cards
                   .filter((card) => {
+                    if (showOnlyFavorites && !isFavorited(deck.id, card.id)) return false;
                     if (!debouncedSearch) return true;
                     return card.nome.toLowerCase().includes(debouncedSearch);
                   })
@@ -88,12 +103,22 @@ export default function GlossarioScreen() {
 
                   return (
                     <View key={cardKey} style={styles.cardItem}>
-                      <TouchableOpacity
-                        style={styles.cardHeader}
-                        onPress={() => setSelectedCardKey((current) => (current === cardKey ? null : cardKey))}
-                      >
-                        <Text style={styles.cardTitle}>{open ? '▾ ' : '▸ '}{card.nome}</Text>
-                      </TouchableOpacity>
+                      <View style={styles.cardHeaderRow}>
+                        <TouchableOpacity
+                          style={styles.cardHeader}
+                          onPress={() => setSelectedCardKey((current) => (current === cardKey ? null : cardKey))}
+                        >
+                          <Text style={styles.cardTitle}>{open ? '▾ ' : '▸ '}{card.nome}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.favoriteButton}
+                          onPress={() => handleToggleFavorite(deck.id, card.id)}
+                        >
+                          <Text style={[styles.favoriteIcon, isFavorited(deck.id, card.id) && styles.favoriteIconActive]}>
+                            {isFavorited(deck.id, card.id) ? '★' : '☆'}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
 
                       {open ? (
                         <>
@@ -163,6 +188,23 @@ const styles = StyleSheet.create({
   },
   cardHeader: {
     backgroundColor: 'transparent',
+    flex: 1,
+  },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  favoriteButton: {
+    padding: 8,
+    marginLeft: 8,
+  },
+  favoriteIcon: {
+    fontSize: 20,
+    color: 'rgba(228,195,38,0.5)',
+  },
+  favoriteIconActive: {
+    color: Colors.gold,
   },
   deckHeader: {
     backgroundColor: 'transparent',
@@ -214,5 +256,28 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 12,
     fontStyle: 'italic',
+  },
+  filterButton: {
+    backgroundColor: 'rgba(228,195,38,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(228,195,38,0.24)',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    marginBottom: 14,
+    alignItems: 'center',
+  },
+  filterButtonActive: {
+    backgroundColor: 'rgba(228,195,38,0.18)',
+    borderColor: Colors.gold,
+  },
+  filterButtonText: {
+    color: 'rgba(228,195,38,0.7)',
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
+  filterButtonTextActive: {
+    color: Colors.gold,
   },
 });
