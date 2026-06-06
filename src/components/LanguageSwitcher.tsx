@@ -1,40 +1,46 @@
-import { Text } from '@/components/Themed';
-import { TouchableOpacity, View } from 'react-native';
+import { TouchableOpacity, View, Text } from 'react-native';
+import { useTheme } from '../../src/context/ThemeContext';
 import { useLanguage, useTranslation } from '../../src/i18n/useTranslation';
-import { globalStyles as GStyles } from '../../src/styles/GlobalStyles';
+import { makeGlobalStyles, getColors } from '../../src/styles/GlobalStyles';
 
 const languageOptions = [
-  { code: 'pt-BR', name: 'Português (BR)' },
-  { code: 'en', name: 'English' },
+  { code: 'pt-BR', name: 'PT' },
+  { code: 'en', name: 'EN' },
 ];
 
 export function LanguageSwitcher() {
   const { t } = useTranslation();
   const { currentLanguage, changeLanguage } = useLanguage();
+  const { isLight } = useTheme();
+  const C = getColors(isLight);
 
   return (
-    <View style={{ gap: 10 }}>
-      <Text style={GStyles.title}>{t('settings.language')}</Text>
-      {languageOptions.map((lang) => (
-        <TouchableOpacity
-          key={lang.code}
-          style={[
-            GStyles.mainButton,
-            currentLanguage === lang.code && { backgroundColor: '#e4c326' },
-          ]}
-          onPress={() => changeLanguage(lang.code)}
-        >
-          <Text
-            style={[
-              GStyles.buttonText,
-              currentLanguage === lang.code && { color: '#0f0918' },
-            ]}
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+      {languageOptions.map((lang, index) => {
+        const isActive = currentLanguage === lang.code;
+        return (
+          <TouchableOpacity
+            key={lang.code}
+            onPress={() => changeLanguage(lang.code)}
+            style={{
+              paddingHorizontal: 10,
+              paddingVertical: 5,
+              borderRadius: 8,
+              backgroundColor: isActive ? C.gold : 'transparent',
+              borderWidth: 1,
+              borderColor: isActive ? C.gold : C.panelBorder,
+            }}
           >
-            {currentLanguage === lang.code ? '✓ ' : ''}
-            {lang.name}
-          </Text>
-        </TouchableOpacity>
-      ))}
+            <Text style={{
+              color: isActive ? (isLight ? '#fff' : '#0f0918') : C.text,
+              fontWeight: '700',
+              fontSize: 12,
+            }}>
+              {lang.name}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 }

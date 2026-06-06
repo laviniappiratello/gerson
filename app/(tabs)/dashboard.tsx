@@ -1,24 +1,21 @@
 import { Text, View } from '@/components/Themed';
-import { useMemo, useEffect } from 'react';
+import { useMemo } from 'react';
 import { Image, ScrollView } from 'react-native';
 import { INFO_ARCANOS, INFO_SIGNOS } from '../../constants/MisticoData';
 import { TAROT_CARDS, getPrevisaoDoDia } from '../../constants/OraculoData';
 import { useAuth } from '../../src/context/AuthContext';
+import { useTheme } from '../../src/context/ThemeContext';
 import { DicasDoDiaCard } from '../../src/features/oraculos/DicasDoDiaCard';
 import { useTranslation } from '../../src/i18n/useTranslation';
-import { globalStyles as GStyles } from '../../src/styles/GlobalStyles';
-import { dashboardScreenStyles as styles } from '../../src/styles/screens/DashboardScreenStyles';
-import { sincronizarBancoDeDados } from '../../src/services/syncService'; // Importação do serviço de sync
+import { makeGlobalStyles } from '../../src/styles/GlobalStyles';
+import { makeDashboardStyles } from '../../src/styles/screens/DashboardScreenStyles';
 
 export default function DashboardScreen() {
   const { user, isLoading } = useAuth();
   const { t } = useTranslation();
-
-  useEffect(() => {
-    if (user) {
-      sincronizarBancoDeDados();
-    }
-  }, [user]);
+  const { isLight } = useTheme();
+  const GStyles = makeGlobalStyles(isLight);
+  const styles = makeDashboardStyles(isLight);
 
   const previsao = useMemo(() => {
     if (!user) return '';
@@ -43,27 +40,22 @@ export default function DashboardScreen() {
   }
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: styles.container.backgroundColor }}>
       <ScrollView style={styles.container} contentContainerStyle={styles.page}>
         <Text style={styles.kicker}>✦ PERFIL</Text>
         <Text style={GStyles.title}>{t('dashboard.title')}</Text>
-
         <View style={styles.block}>
           <Text style={styles.blockTitle}>{t('dashboard.profile')}</Text>
           <Text style={styles.baseText}>{t('dashboard.sign')}: {user.signo}</Text>
           <Text style={styles.baseText}>{t('dashboard.personalArcana')}: {user.arcano}</Text>
-
           <View style={styles.row}>
             <Image source={INFO_SIGNOS[user.signo]?.imagem} style={styles.signImage} resizeMode="contain" />
             <Image source={INFO_ARCANOS[user.arcano]?.imagem} style={styles.arcanoImage} resizeMode="contain" />
           </View>
-
           <Text style={styles.previsaoLabel}>{t('dashboard.dayForecast')}</Text>
           <Text style={styles.previsao}>{previsao}</Text>
         </View>
-
         <DicasDoDiaCard signo={user.signo} />
-
         <View style={styles.block}>
           <Text style={styles.blockTitle}>{t('dashboard.cardOfTheDay')}</Text>
           {cartaDoDia ? (
@@ -74,10 +66,7 @@ export default function DashboardScreen() {
             </>
           ) : null}
         </View>
-
-        <Text style={styles.footnote}>
-          {t('dashboard.offlineData')}
-        </Text>
+        <Text style={styles.footnote}>{t('dashboard.offlineData')}</Text>
       </ScrollView>
     </View>
   );
