@@ -4,7 +4,9 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
+import { I18nTestComponent } from '../src/components/I18nTestComponent';
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
+import '../src/i18n/config';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -60,10 +62,10 @@ export default function RootLayout() {
         <RouteGuard />
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="(auth)" />
           <Stack.Screen name="onboarding" />
           <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
         </Stack>
+        <I18nTestComponent />
       </AuthProvider>
     </ThemeProvider>
   );

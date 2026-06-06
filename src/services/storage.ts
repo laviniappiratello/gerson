@@ -35,12 +35,24 @@ export type ReadingRecord = {
   favorite: boolean;
 };
 
+export type ThirdPartyReadingRecord = {
+  id: string;
+  pessoaNome: string;
+  pessoaSigno: SignoNome;
+  question: string;
+  cards: CardDraw[];
+  deckId?: DeckId;
+  cardCount?: number;
+  createdAt: number;
+};
+
 const USER_KEY = '@persephone/user';
 const USERS_KEY = '@persephone/users';
 const SESSION_KEY = '@persephone/session';
 const ONBOARDING_KEY = '@persephone/onboarding_seen';
 const READINGS_KEY = '@persephone/readings';
 const CURRENT_USER_ID_KEY = '@persephone/current_user_id';
+const THIRD_PARTY_READINGS_KEY = '@persephone/third_party_readings';
 
 const hasDb = Platform.OS !== 'web' && database !== null;
 
@@ -406,4 +418,17 @@ export async function toggleReadingFavorite(userId: string, readingId: string) {
 
 export function makeId(prefix: string) {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+// Third Party Readings
+
+export async function addThirdPartyReading(reading: ThirdPartyReadingRecord) {
+  const list = await getThirdPartyReadings();
+  const next = [reading, ...list].slice(0, 40);
+  await AsyncStorage.setItem(THIRD_PARTY_READINGS_KEY, JSON.stringify(next));
+}
+
+export async function getThirdPartyReadings(): Promise<ThirdPartyReadingRecord[]> {
+  const raw = await AsyncStorage.getItem(THIRD_PARTY_READINGS_KEY);
+  return raw ? (JSON.parse(raw) as ThirdPartyReadingRecord[]) : [];
 }

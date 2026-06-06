@@ -5,11 +5,13 @@ import { INFO_ARCANOS, INFO_SIGNOS } from '../../constants/MisticoData';
 import { TAROT_CARDS, getPrevisaoDoDia } from '../../constants/OraculoData';
 import { useAuth } from '../../src/context/AuthContext';
 import { DicasDoDiaCard } from '../../src/features/oraculos/DicasDoDiaCard';
+import { useTranslation } from '../../src/i18n/useTranslation';
 import { globalStyles as GStyles } from '../../src/styles/GlobalStyles';
 import { dashboardScreenStyles as styles } from '../../src/styles/screens/DashboardScreenStyles';
 
 export default function DashboardScreen() {
   const { user, isLoading } = useAuth();
+  const { t } = useTranslation();
 
   const previsao = useMemo(() => {
     if (!user) return '';
@@ -28,34 +30,35 @@ export default function DashboardScreen() {
   if (isLoading || !user) {
     return (
       <View style={GStyles.container}>
-        <Text style={GStyles.title}>Carregando seu destino...</Text>
+        <Text style={GStyles.title}>{t('dashboard.loadingDestiny')}</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.page}>
+    <View style={{ flex: 1 }}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.page}>
       <Text style={styles.kicker}>✦ PERFIL</Text>
-      <Text style={GStyles.title}>Portal de Oráculos</Text>
+      <Text style={GStyles.title}>{t('dashboard.title')}</Text>
 
       <View style={styles.block}>
-        <Text style={styles.blockTitle}>Perfil Místico</Text>
-        <Text style={styles.baseText}>Signo: {user.signo}</Text>
-        <Text style={styles.baseText}>Arcano Pessoal: {user.arcano}</Text>
+        <Text style={styles.blockTitle}>{t('dashboard.profile')}</Text>
+        <Text style={styles.baseText}>{t('dashboard.sign')}: {user.signo}</Text>
+        <Text style={styles.baseText}>{t('dashboard.personalArcana')}: {user.arcano}</Text>
 
         <View style={styles.row}>
           <Image source={INFO_SIGNOS[user.signo]?.imagem} style={styles.signImage} resizeMode="contain" />
           <Image source={INFO_ARCANOS[user.arcano]?.imagem} style={styles.arcanoImage} resizeMode="contain" />
         </View>
 
-        <Text style={styles.previsaoLabel}>PREVISAO DO DIA:</Text>
+        <Text style={styles.previsaoLabel}>{t('dashboard.dayForecast')}</Text>
         <Text style={styles.previsao}>{previsao}</Text>
       </View>
 
       <DicasDoDiaCard signo={user.signo} />
 
       <View style={styles.block}>
-        <Text style={styles.blockTitle}>Carta do Dia</Text>
+        <Text style={styles.blockTitle}>{t('dashboard.cardOfTheDay')}</Text>
         {cartaDoDia ? (
           <>
             <Text style={styles.cardTitle}>{cartaDoDia.nome}</Text>
@@ -66,8 +69,10 @@ export default function DashboardScreen() {
       </View>
 
       <Text style={styles.footnote}>
-        Dados mantidos offline no dispositivo.
+        {t('dashboard.offlineData')}
       </Text>
     </ScrollView>
+    </View>
   );
 }
+

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Image, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { CIGANO_CARDS, MARSELHA_CARDS, TAROT_CARDS_COMPLETO } from '../../constants/OraculoData';
 import { useRituais } from '../../src/hooks/useRituais';
+import { useTranslation } from '../../src/i18n/useTranslation';
 import { Colors } from '../../src/styles/GlobalStyles';
 
 type RitualCardType = {
@@ -14,9 +15,18 @@ type RitualCardType = {
 const allCards: RitualCardType[] = [...TAROT_CARDS_COMPLETO, ...CIGANO_CARDS, ...MARSELHA_CARDS];
 
 export default function RituaisScreen() {
-  const { currentPhase, phaseInfo, rituaisPorFase } = useRituais();
+  const { t } = useTranslation();
+  const { phaseInfo, rituaisPorFase } = useRituais();
   const [expandedRitualId, setExpandedRitualId] = useState<string | null>(null);
   const [completedRituais, setCompletedRituais] = useState<Set<string>>(new Set());
+
+  const translatedPhaseName = phaseInfo
+    ? translateLunarPhaseName(phaseInfo.phase, t, phaseInfo.name)
+    : '';
+
+  const translatedPhaseDescription = phaseInfo
+    ? translateLunarPhaseDescription(phaseInfo.phase, t, phaseInfo.description)
+    : '';
 
   const handleToggleRitual = (ritualId: string) => {
     setExpandedRitualId((current) => (current === ritualId ? null : ritualId));
@@ -40,30 +50,30 @@ export default function RituaisScreen() {
       {phaseInfo && (
         <View style={styles.lunarHeader}>
           <Text style={styles.lunarEmoji}>{phaseInfo.emoji}</Text>
-          <Text style={styles.lunarTitle}>{phaseInfo.name}</Text>
-          <Text style={styles.lunarDescription}>{phaseInfo.description}</Text>
+          <Text style={styles.lunarTitle}>{translatedPhaseName}</Text>
+          <Text style={styles.lunarDescription}>{translatedPhaseDescription}</Text>
 
           <View style={styles.lunarDetails}>
             <View style={styles.detailBox}>
-              <Text style={styles.detailLabel}>Iluminação</Text>
+              <Text style={styles.detailLabel}>{t('rituals.illumination')}</Text>
               <Text style={styles.detailValue}>{phaseInfo.illumination}</Text>
             </View>
             <View style={styles.detailBox}>
-              <Text style={styles.detailLabel}>Próxima Fase</Text>
-              <Text style={styles.detailValue}>{phaseInfo.nextPhase === 'nova' ? '🌑' : '🌒'}</Text>
+              <Text style={styles.detailLabel}>{t('rituals.nextPhase')}</Text>
+              <Text style={styles.detailValue}>{getLunarPhaseEmoji(phaseInfo.nextPhase)}</Text>
             </View>
             <View style={styles.detailBox}>
-              <Text style={styles.detailLabel}>Data</Text>
+              <Text style={styles.detailLabel}>{t('rituals.date')}</Text>
               <Text style={styles.detailValue}>{phaseInfo.nextPhaseDate}</Text>
             </View>
           </View>
 
           <View style={styles.characteristicsBox}>
-            <Text style={styles.characteristicsTitle}>Características desta fase:</Text>
+            <Text style={styles.characteristicsTitle}>{t('rituals.phaseCharacteristics')}</Text>
             <View style={styles.characteristicsList}>
               {phaseInfo.characteristics.map((char, idx) => (
                 <View key={idx} style={styles.characteristicTag}>
-                  <Text style={styles.characteristicText}>✨ {char}</Text>
+                  <Text style={styles.characteristicText}>✨ {translateCharacteristic(char, t)}</Text>
                 </View>
               ))}
             </View>
@@ -72,7 +82,7 @@ export default function RituaisScreen() {
       )}
 
       {/* Lista de Rituais */}
-      <Text style={styles.sectionTitle}>Rituais para esta fase</Text>
+      <Text style={styles.sectionTitle}>{t('rituals.forThisPhase')}</Text>
 
       {rituaisPorFase.length > 0 ? (
         rituaisPorFase.map((ritual) => {
@@ -93,8 +103,8 @@ export default function RituaisScreen() {
                     <Text style={styles.ritualCategory}>{ritual.category}</Text>
                   </View>
                 </View>
-                <View style={[styles.difficultyBadge, { backgroundColor: getDifficultyColor(ritual.difficulty) }]}>
-                  <Text style={styles.difficultyText}>{ritual.difficulty}</Text>
+                <View style={[styles.difficultyBadge, { backgroundColor: getDifficultyColor(ritual.difficulty) }]}> 
+                  <Text style={styles.difficultyText}>{translateDifficulty(ritual.difficulty, t)}</Text>
                 </View>
               </TouchableOpacity>
 
@@ -107,18 +117,18 @@ export default function RituaisScreen() {
                   {/* Info básicas */}
                   <View style={styles.infoRow}>
                     <View style={styles.infoBadge}>
-                      <Text style={styles.infoLabel}>⏱️ Duração</Text>
+                      <Text style={styles.infoLabel}>⏱️ {t('rituals.duration')}</Text>
                       <Text style={styles.infoValue}>{ritual.duration}</Text>
                     </View>
                     <View style={styles.infoBadge}>
-                      <Text style={styles.infoLabel}>📋 Passos</Text>
+                      <Text style={styles.infoLabel}>📋 {t('rituals.stepCount')}</Text>
                       <Text style={styles.infoValue}>{ritual.steps.length}</Text>
                     </View>
                   </View>
 
                   {/* Materiais */}
                   <View style={styles.section}>
-                    <Text style={styles.sectionSubtitle}>Materiais necessários</Text>
+                    <Text style={styles.sectionSubtitle}>{t('rituals.materials')}</Text>
                     {ritual.materials.map((material, idx) => (
                       <View key={idx} style={styles.listItem}>
                         <Text style={styles.listItemText}>• {material}</Text>
@@ -128,7 +138,7 @@ export default function RituaisScreen() {
 
                   {/* Passos do ritual */}
                   <View style={styles.section}>
-                    <Text style={styles.sectionSubtitle}>Passos</Text>
+                    <Text style={styles.sectionSubtitle}>{t('rituals.steps')}</Text>
                     {ritual.steps.map((step) => (
                       <View key={step.order} style={styles.stepBox}>
                         <View style={styles.stepHeader}>
@@ -148,7 +158,7 @@ export default function RituaisScreen() {
                   {/* Cartas sugeridas */}
                   {ritual.suggestedCards && ritual.suggestedCards.length > 0 && (
                     <View style={styles.section}>
-                      <Text style={styles.sectionSubtitle}>Cartas Sugeridas</Text>
+                      <Text style={styles.sectionSubtitle}>{t('rituals.suggestedCards')}</Text>
                       <View style={styles.cardsGrid}>
                         {ritual.suggestedCards.map((cardId) => {
                           const card = allCards.find((c) => c.id === cardId);
@@ -165,7 +175,7 @@ export default function RituaisScreen() {
 
                   {/* Benefícios */}
                   <View style={styles.section}>
-                    <Text style={styles.sectionSubtitle}>Benefícios</Text>
+                    <Text style={styles.sectionSubtitle}>{t('rituals.benefits')}</Text>
                     {ritual.benefits.map((benefit, idx) => (
                       <View key={idx} style={styles.listItem}>
                         <Text style={styles.listItemText}>✓ {benefit}</Text>
@@ -176,7 +186,7 @@ export default function RituaisScreen() {
                   {/* Afirmação */}
                   {ritual.affirmation && (
                     <View style={styles.affirmationBox}>
-                      <Text style={styles.affirmationLabel}>Afirmação do Ritual</Text>
+                      <Text style={styles.affirmationLabel}>{t('rituals.ritualAffirmation')}</Text>
                       <Text style={styles.affirmationText}>"{ritual.affirmation}"</Text>
                     </View>
                   )}
@@ -187,7 +197,7 @@ export default function RituaisScreen() {
                     onPress={() => handleCompleteRitual(ritual.id)}
                   >
                     <Text style={[styles.completeButtonText, isCompleted && styles.completeButtonTextActive]}>
-                      {isCompleted ? '✓ Ritual Concluído' : 'Marcar como Concluído'}
+                      {isCompleted ? t('rituals.ritualCompleted') : t('rituals.completeRitual')}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -197,20 +207,70 @@ export default function RituaisScreen() {
         })
       ) : (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyStateText}>Nenhum ritual disponível para esta fase</Text>
+          <Text style={styles.emptyStateText}>{t('rituals.noPhaseRituals')}</Text>
         </View>
       )}
 
       {/* Resumo de Rituais Completados */}
       {completedRituais.size > 0 && (
         <View style={styles.summaryBox}>
-          <Text style={styles.summaryTitle}>Rituais Completados</Text>
+          <Text style={styles.summaryTitle}>{t('rituals.completedRituals')}</Text>
           <Text style={styles.summaryCount}>{completedRituais.size} de {rituaisPorFase.length}</Text>
-          <Text style={styles.summaryText}>Parabéns! Continue na jornada espiritual!</Text>
+          <Text style={styles.summaryText}>{t('rituals.summaryMessage')}</Text>
         </View>
       )}
     </ScrollView>
   );
+}
+
+function translateDifficulty(difficulty: string, t: (key: string) => string): string {
+  const normalized = difficulty.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  if (normalized === 'facil') return t('rituals.difficulty.easy');
+  if (normalized === 'moderado') return t('rituals.difficulty.moderate');
+  if (normalized === 'avancado') return t('rituals.difficulty.advanced');
+  return difficulty;
+}
+
+function getLunarPhaseKey(phase: string): 'new' | 'waxing' | 'full' | 'waning' | null {
+  const normalized = phase.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+
+  if (normalized === 'nova' || normalized === 'new') return 'new';
+  if (normalized === 'crescente' || normalized === 'waxing') return 'waxing';
+  if (normalized === 'cheia' || normalized === 'full') return 'full';
+  if (normalized === 'minguante' || normalized === 'waning') return 'waning';
+
+  return null;
+}
+
+function getLunarPhaseEmoji(phase: string): string {
+  const key = getLunarPhaseKey(phase);
+
+  if (key === 'new') return '🌑';
+  if (key === 'waxing') return '🌒';
+  if (key === 'full') return '🌕';
+  if (key === 'waning') return '🌘';
+
+  return '🌙';
+}
+
+function translateLunarPhaseName(phase: string, t: (key: string) => string, fallback: string): string {
+  const key = getLunarPhaseKey(phase);
+  return key ? t(`lunarPhases.${key}.name`) : fallback;
+}
+
+function translateLunarPhaseDescription(phase: string, t: (key: string) => string, fallback: string): string {
+  const key = getLunarPhaseKey(phase);
+  return key ? t(`lunarPhases.${key}.desc`) : fallback;
+}
+
+function translateCharacteristic(value: string, t: (key: string) => string): string {
+  const normalized = value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  if (normalized === 'finalizacoes') return t('rituals.phaseExamples.closure');
+  if (normalized === 'limpeza energetica') return t('rituals.phaseExamples.energeticCleansing');
+  if (normalized === 'liberacao') return t('rituals.phaseExamples.release');
+  if (normalized === 'organizacao') return t('rituals.phaseExamples.organization');
+  if (normalized === 'reflexao') return t('rituals.phaseExamples.reflection');
+  return value;
 }
 
 function getDifficultyColor(difficulty: string): string {

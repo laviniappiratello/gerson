@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { gerarMapaAstral, type MapaAstral } from '../services/astralMap';
+import { gerarMapaAstral } from '../services/astralMap';
 
 export const useMapaAstral = (dataDeNascimento: string, horaDeNascimento?: string) => {
   const mapaAstral = useMemo(() => {
