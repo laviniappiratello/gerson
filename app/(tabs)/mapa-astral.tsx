@@ -3,9 +3,11 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { useAuth } from '../../src/context/AuthContext';
 import { useMapaAstral } from '../../src/hooks/useMapaAstral';
+import { useTranslation } from '../../src/i18n/useTranslation';
 import { Colors, globalStyles as GStyles } from '../../src/styles/GlobalStyles';
 
 export default function MapaAstralScreen() {
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const mapaAstral = useMapaAstral(user?.birthDate || '');
   const [expandedSection, setExpandedSection] = useState<string | null>('solar');
@@ -14,9 +16,9 @@ export default function MapaAstralScreen() {
   if (!user || !mapaAstral) {
     return (
       <View style={styles.container}>
-        <Text style={GStyles.title}>Mapa Astral</Text>
+        <Text style={GStyles.title}>{t('astralMap.title')}</Text>
         <View style={styles.emptyState}>
-          <Text style={styles.emptyStateText}>Faça login para ver seu mapa astral</Text>
+          <Text style={styles.emptyStateText}>{t('astralMap.loginRequired')}</Text>
         </View>
       </View>
     );
@@ -26,35 +28,35 @@ export default function MapaAstralScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.page}>
       {/* Título e Data de Nascimento */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Seu Mapa Astral</Text>
+        <Text style={styles.headerTitle}>{t('astralMap.yourAstralMap')}</Text>
         <Text style={styles.birthDate}>
-          Nascido em {new Date(user.birthDate).toLocaleDateString('pt-BR')}
+          {t('astralMap.bornOn')} {new Date(user.birthDate).toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'pt-BR')}
         </Text>
       </View>
 
       {/* Tripla Astrológica - Destaque Principal */}
       <View style={styles.tripleAstrologicalGrid}>
         <View style={styles.tripleCard}>
-          <Text style={styles.tripleLabel}>☀️ Sol (Ego)</Text>
-          <Text style={styles.tripleSigno}>{mapaAstral.signoSolar.nome}</Text>
+          <Text style={styles.tripleLabel}>☀️ {t('astralMap.sunEgo')}</Text>
+          <Text style={styles.tripleSigno}>{translateSign(mapaAstral.signoSolar.nome, t)}</Text>
           <Text style={styles.tripleSymbol}>{mapaAstral.signoSolar.simbolo}</Text>
-          <Text style={styles.tripleDescricao}>{mapaAstral.signoSolar.frase}</Text>
+          <Text style={styles.tripleDescricao}>{translateSignMotto(mapaAstral.signoSolar.nome, t)}</Text>
         </View>
 
         <View style={styles.tripleCard}>
-          <Text style={styles.tripleLabel}>🌙 Lua (Emoção)</Text>
-          <Text style={styles.tripleSigno}>{mapaAstral.signoLunar.nome}</Text>
+          <Text style={styles.tripleLabel}>🌙 {t('astralMap.moonEmotion')}</Text>
+          <Text style={styles.tripleSigno}>{translateSign(mapaAstral.signoLunar.nome, t)}</Text>
           <Text style={styles.tripleSymbol}>{mapaAstral.signoLunar.simbolo}</Text>
-          <Text style={styles.tripleDescricao}>{mapaAstral.signoLunar.frase}</Text>
+          <Text style={styles.tripleDescricao}>{translateSignMotto(mapaAstral.signoLunar.nome, t)}</Text>
         </View>
 
         <View style={styles.tripleCard}>
-          <Text style={styles.tripleLabel}>⬆️ Ascendente</Text>
-          <Text style={styles.tripleSigno}>{mapaAstral.ascendente.nome}</Text>
+          <Text style={styles.tripleLabel}>⬆️ {t('astralMap.ascendant')}</Text>
+          <Text style={styles.tripleSigno}>{translateSign(mapaAstral.ascendente.nome, t)}</Text>
           <Text style={styles.tripleSymbol}>{mapaAstral.ascendente.simbolo}</Text>
-          <Text style={styles.tripleDescricao}>Primeira impressão</Text>
+          <Text style={styles.tripleDescricao}>{t('astralMap.firstImpression')}</Text>
         </View>
-      </View>
+      </View>{/*  */}
 
       {/* Descrição da Personalidade */}
       <TouchableOpacity
@@ -62,7 +64,7 @@ export default function MapaAstralScreen() {
         onPress={() => setExpandedSection(expandedSection === 'personalidade' ? null : 'personalidade')}
       >
         <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>📊 Sua Personalidade Astrológica</Text>
+          <Text style={styles.cardTitle}>📊 {t('astralMap.personalitySection')}</Text>
           <Text style={styles.toggleIcon}>{expandedSection === 'personalidade' ? '▾' : '▸'}</Text>
         </View>
 
@@ -80,26 +82,26 @@ export default function MapaAstralScreen() {
         onPress={() => setExpandedSection(expandedSection === 'elementos' ? null : 'elementos')}
       >
         <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>🔥 Elementos & Qualidades</Text>
+          <Text style={styles.cardTitle}>🔥 {t('astralMap.elementsSection')}</Text>
           <Text style={styles.toggleIcon}>{expandedSection === 'elementos' ? '▾' : '▸'}</Text>
         </View>
 
         {expandedSection === 'elementos' && (
           <View style={styles.cardContent}>
             <View style={styles.elementRow}>
-              <Text style={styles.elementLabel}>Sol:</Text>
+              <Text style={styles.elementLabel}>{t('astralMap.sunLabel')}</Text>
               <Text style={styles.elementValue}>
                 {mapaAstral.signoSolar.elemento} / {mapaAstral.signoSolar.qualidade}
               </Text>
             </View>
             <View style={styles.elementRow}>
-              <Text style={styles.elementLabel}>Lua:</Text>
+              <Text style={styles.elementLabel}>{t('astralMap.moonLabel')}</Text>
               <Text style={styles.elementValue}>
                 {mapaAstral.signoLunar.elemento} / {mapaAstral.signoLunar.qualidade}
               </Text>
             </View>
             <View style={styles.elementRow}>
-              <Text style={styles.elementLabel}>Ascendente:</Text>
+              <Text style={styles.elementLabel}>{t('astralMap.ascendantLabel')}</Text>
               <Text style={styles.elementValue}>
                 {mapaAstral.ascendente.elemento} / {mapaAstral.ascendente.qualidade}
               </Text>
@@ -114,7 +116,7 @@ export default function MapaAstralScreen() {
         onPress={() => setExpandedSection(expandedSection === 'casas' ? null : 'casas')}
       >
         <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>🏠 Casas Astrológicas</Text>
+          <Text style={styles.cardTitle}>🏠 {t('astralMap.housesSection')}</Text>
           <Text style={styles.toggleIcon}>{expandedSection === 'casas' ? '▾' : '▸'}</Text>
         </View>
 
@@ -141,10 +143,10 @@ export default function MapaAstralScreen() {
                     <View key={casa.numero}>
                       <Text style={styles.casaDetailTitle}>{casa.nome}</Text>
                       <Text style={styles.casaDetailSigno}>
-                        {casa.signo.nome} {casa.signo.simbolo}
+                        {translateSign(casa.signo.nome, t)} {casa.signo.simbolo}
                       </Text>
                       <Text style={styles.casaDetailText}>{casa.descricao}</Text>
-                      <Text style={styles.casaDetailTema}>Tema: {casa.nome.split(' ')[1]}</Text>
+                      <Text style={styles.casaDetailTema}>{t('astralMap.theme')}: {casa.nome.split(' ')[1]}</Text>
                     </View>
                   ))}
               </View>
@@ -159,7 +161,7 @@ export default function MapaAstralScreen() {
         onPress={() => setExpandedSection(expandedSection === 'compatibilidade' ? null : 'compatibilidade')}
       >
         <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>💕 Compatibilidades Amorosas</Text>
+          <Text style={styles.cardTitle}>💕 {t('astralMap.compatibilitySection')}</Text>
           <Text style={styles.toggleIcon}>{expandedSection === 'compatibilidade' ? '▾' : '▸'}</Text>
         </View>
 
@@ -180,24 +182,24 @@ export default function MapaAstralScreen() {
         onPress={() => setExpandedSection(expandedSection === 'descricoes' ? null : 'descricoes')}
       >
         <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>📖 Descrições dos Signos</Text>
+          <Text style={styles.cardTitle}>📖 {t('astralMap.signDescriptionsSection')}</Text>
           <Text style={styles.toggleIcon}>{expandedSection === 'descricoes' ? '▾' : '▸'}</Text>
         </View>
 
         {expandedSection === 'descricoes' && (
           <View style={styles.cardContent}>
             <View style={styles.signDescription}>
-              <Text style={styles.signTitle}>☀️ {mapaAstral.signoSolar.nome}</Text>
+              <Text style={styles.signTitle}>☀️ {translateSign(mapaAstral.signoSolar.nome, t)}</Text>
               <Text style={styles.signText}>{mapaAstral.signoSolar.descricao}</Text>
             </View>
 
             <View style={styles.signDescription}>
-              <Text style={styles.signTitle}>🌙 {mapaAstral.signoLunar.nome}</Text>
+              <Text style={styles.signTitle}>🌙 {translateSign(mapaAstral.signoLunar.nome, t)}</Text>
               <Text style={styles.signText}>{mapaAstral.signoLunar.descricao}</Text>
             </View>
 
             <View style={styles.signDescription}>
-              <Text style={styles.signTitle}>⬆️ {mapaAstral.ascendente.nome}</Text>
+              <Text style={styles.signTitle}>⬆️ {translateSign(mapaAstral.ascendente.nome, t)}</Text>
               <Text style={styles.signText}>{mapaAstral.ascendente.descricao}</Text>
             </View>
           </View>
@@ -206,15 +208,51 @@ export default function MapaAstralScreen() {
 
       {/* Nota Informativa */}
       <View style={styles.infoBox}>
-        <Text style={styles.infoTitle}>ℹ️ Sobre este Mapa Astral</Text>
+        <Text style={styles.infoTitle}>ℹ️ {t('astralMap.aboutTitle')}</Text>
         <Text style={styles.infoText}>
-          Este é um mapa astral simplificado baseado em sua data de nascimento. Para um mapa completo e
-          preciso, consulte um astrólogo profissional que também considerará sua localização e hora exata
-          de nascimento.
+          {t('astralMap.aboutText')}
         </Text>
       </View>
     </ScrollView>
   );
+}
+
+function translateSign(signName: string, t: (key: string) => string): string {
+  const map: Record<string, string> = {
+    Áries: 'aries',
+    Touro: 'taurus',
+    Gêmeos: 'gemini',
+    Câncer: 'cancer',
+    Leão: 'leo',
+    Virgem: 'virgo',
+    Libra: 'libra',
+    Escorpião: 'scorpio',
+    Sagitário: 'sagittarius',
+    Capricórnio: 'capricorn',
+    Aquário: 'aquarius',
+    Peixes: 'pisces',
+  };
+  const key = map[signName];
+  return key ? t(`signs.${key}`) : signName;
+}
+
+function translateSignMotto(signName: string, t: (key: string) => string): string {
+  const map: Record<string, string> = {
+    Áries: 'aries',
+    Touro: 'taurus',
+    Gêmeos: 'gemini',
+    Câncer: 'cancer',
+    Leão: 'leo',
+    Virgem: 'virgo',
+    Libra: 'libra',
+    Escorpião: 'scorpio',
+    Sagitário: 'sagittarius',
+    Capricórnio: 'capricorn',
+    Aquário: 'aquarius',
+    Peixes: 'pisces',
+  };
+  const key = map[signName];
+  return key ? t(`astralMap.signMottos.${key}`) : '';
 }
 
 const styles = StyleSheet.create({

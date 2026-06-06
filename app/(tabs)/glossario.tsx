@@ -5,6 +5,7 @@ import { INFO_DECKS } from '../../constants/MisticoData';
 import { CIGANO_CARDS, MARSELHA_CARDS, TAROT_CARDS_COMPLETO } from '../../constants/OraculoData';
 import { useAuth } from '../../src/context/AuthContext';
 import { useFavoriteCards } from '../../src/hooks/useFavoriteCards';
+import { useTranslation } from '../../src/i18n/useTranslation';
 import { Colors, globalStyles as GStyles } from '../../src/styles/GlobalStyles';
 
 type DeckKey = keyof typeof INFO_DECKS;
@@ -33,6 +34,7 @@ const DECKS: Array<{ id: DeckKey; cards: GlossaryCard[] }> = [
 ];
 
 export default function GlossarioScreen() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { isFavorited, handleToggleFavorite } = useFavoriteCards(user?.id ?? null);
   const [openDeckId, setOpenDeckId] = useState<DeckKey | null>(null);
@@ -50,13 +52,13 @@ export default function GlossarioScreen() {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: Colors.deepBlue }} contentContainerStyle={styles.page}>
-      <Text style={styles.kicker}>✦ SIGNIFICADO DAS CARTAS ✦</Text>
-      <Text style={GStyles.title}>Glossario dos Arcanos</Text>
+      <Text style={styles.kicker}>{t('glossary.kicker')}</Text>
+      <Text style={GStyles.title}>{t('glossary.screenTitle')}</Text>
 
       <View style={styles.searchBlock}>
         <TextInput
           style={styles.searchInput}
-          placeholder="Buscar carta..."
+          placeholder={t('glossary.searchPlaceholder')}
           placeholderTextColor="rgba(228,195,38,0.5)"
           value={searchText}
           onChangeText={setSearchText}
@@ -68,16 +70,26 @@ export default function GlossarioScreen() {
         onPress={() => setShowOnlyFavorites((prev) => !prev)}
       >
         <Text style={[styles.filterButtonText, showOnlyFavorites && styles.filterButtonTextActive]}>
-          {showOnlyFavorites ? '★ Apenas Favoritos' : '☆ Ver Todas'}
+          {showOnlyFavorites ? `★ ${t('glossary.onlyFavorites')}` : `☆ ${t('glossary.viewAll')}`}
         </Text>
       </TouchableOpacity>
 
       <View style={styles.block}>
-        <Text style={styles.baseText}>Abra um baralho para ver as cartas e toque em uma carta para expandir os detalhes.</Text>
+        <Text style={styles.baseText}>{t('glossary.openDeckInstruction')}</Text>
       </View>
 
       {DECKS.map((deck) => {
         const deckMeta = INFO_DECKS[deck.id];
+        const deckTitleMap: Record<DeckKey, string> = {
+          'rider-waite': t('decks.riderWaite'),
+          cigano: t('decks.cigano'),
+          marselha: t('decks.marselha'),
+        };
+        const deckSubtitleMap: Record<DeckKey, string> = {
+          'rider-waite': t('decks.riderWaiteDesc'),
+          cigano: t('decks.ciganoDesc'),
+          marselha: t('decks.marselhaeDesc'),
+        };
         const deckOpen = openDeckId === deck.id;
         return (
           <View key={deck.id} style={styles.block}>
@@ -85,8 +97,8 @@ export default function GlossarioScreen() {
               style={styles.deckHeader}
               onPress={() => setOpenDeckId((current) => (current === deck.id ? null : deck.id))}
             >
-              <Text style={styles.cardTitle}>{deckOpen ? '▾ ' : '▸ '}{deckMeta.titulo}</Text>
-              <Text style={styles.deckSubtitle}>{deckMeta.subtitulo}</Text>
+              <Text style={styles.cardTitle}>{deckOpen ? '▾ ' : '▸ '}{deckTitleMap[deck.id] ?? deckMeta.titulo}</Text>
+              <Text style={styles.deckSubtitle}>{deckSubtitleMap[deck.id] ?? deckMeta.subtitulo}</Text>
             </TouchableOpacity>
 
             {deckOpen ? (
@@ -125,13 +137,13 @@ export default function GlossarioScreen() {
                           <Image source={card.imagem} style={styles.cardImage} resizeMode="contain" />
                           {card.interpretacaoNormal ? (
                             <>
-                              <Text style={styles.meaningTitle}>Significado (Normal)</Text>
+                              <Text style={styles.meaningTitle}>{t('glossary.meaningNormal')}</Text>
                               <Text style={styles.baseText}>{card.interpretacaoNormal}</Text>
-                              <Text style={styles.meaningTitle}>Significado (Invertida)</Text>
+                              <Text style={styles.meaningTitle}>{t('glossary.meaningReversed')}</Text>
                               <Text style={styles.baseText}>{card.interpretacaoInvertida}</Text>
                             </>
                           ) : (
-                            <Text style={styles.baseText}>Carta disponível no baralho cigano.</Text>
+                            <Text style={styles.baseText}>{t('glossary.ciganoCardOnly')}</Text>
                           )}
                         </>
                       ) : null}
@@ -139,7 +151,7 @@ export default function GlossarioScreen() {
                   );
                 })}
                 {deck.cards.filter((card) => card.nome.toLowerCase().includes(debouncedSearch)).length === 0 && debouncedSearch && (
-                  <Text style={styles.noResults}>Nenhuma carta encontrada com "{debouncedSearch}"</Text>
+                  <Text style={styles.noResults}>{t('glossary.noResults', { query: debouncedSearch })}</Text>
                 )}
               </View>
             ) : null}

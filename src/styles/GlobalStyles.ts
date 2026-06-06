@@ -1,4 +1,4 @@
-import { StyleSheet } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 
 export const Colors = {
   gold: '#e4c326',
@@ -54,10 +54,14 @@ export const globalStyles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: Colors.gold,
-    shadowColor: '#000',
-    shadowOpacity: 0.28,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 6 },
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0px 6px 20px rgba(0, 0, 0, 0.28)' }
+      : {
+          shadowColor: '#000',
+          shadowOpacity: 0.28,
+          shadowRadius: 10,
+          shadowOffset: { width: 0, height: 6 },
+        }),
     elevation: 4,
   },
   buttonText: {

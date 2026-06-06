@@ -1,5 +1,9 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import {
+    clearDailyHoroscopeNotification,
+    ensureDailyHoroscopeNotification,
+} from '../services/dailyHoroscopeNotifications';
+import {
     authenticateUser,
     clearSession,
     getUser,
@@ -53,6 +57,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setState({ status: 'unauthenticated' });
     })();
   }, []);
+
+  useEffect(() => {
+    if (state.status === 'authenticated') {
+      void ensureDailyHoroscopeNotification(state.user);
+      return;
+    }
+
+    if (state.status === 'unauthenticated') {
+      void clearDailyHoroscopeNotification();
+    }
+  }, [state]);
 
   const login = useCallback(async (email: string, senha: string) => {
     const profile = await authenticateUser(email, senha);

@@ -5,10 +5,12 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { Link, Tabs } from 'expo-router';
 import React from 'react';
 import { Pressable } from 'react-native';
+import { useTranslation } from '../../src/i18n/useTranslation';
 import { tabStyles } from '../../src/styles/TabStyles';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const { t } = useTranslation();
 
   return (
     <Tabs
@@ -26,7 +28,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Sair',
+          title: t('navigation.exit'),
           tabBarIcon: ({ color }) => (
             <Ionicons name="exit-outline" color={color} size={24} />
           ),
@@ -49,35 +51,35 @@ export default function TabLayout() {
       <Tabs.Screen
         name="dashboard"
         options={{
-          title: 'Perfil',
+          title: t('navigation.profile'),
           tabBarIcon: ({ color }) => <Ionicons name="star" color={color} size={22} />,
         }}
       />
       <Tabs.Screen
         name="tiragem"
         options={{
-          title: 'Tiragem',
+          title: t('navigation.draws'),
           tabBarIcon: ({ color }) => <MaterialIcons name="auto-awesome" color={color} size={22} />,
         }}
       />
       <Tabs.Screen
         name="glossario"
         options={{
-          title: 'Glossário',
+          title: t('navigation.glossary'),
           tabBarIcon: ({ color }) => <MaterialIcons name="menu-book" color={color} size={22} />,
         }}
       />
       <Tabs.Screen
         name="rituais"
         options={{
-          title: 'Rituais',
+          title: t('navigation.rituals'),
           tabBarIcon: ({ color }) => <Ionicons name="sparkles" color={color} size={22} />,
         }}
       />
       <Tabs.Screen
         name="mapa-astral"
         options={{
-          title: 'Mapa',
+          title: t('navigation.astralMap'),
           tabBarIcon: ({ color }) => <Ionicons name="planet" color={color} size={22} />,
         }}
       />
