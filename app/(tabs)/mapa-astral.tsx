@@ -1,9 +1,9 @@
 import { Text, View } from '@/components/Themed';
-import { useEffect, useState } from 'react';
-import { Image, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
-import { Colors, globalStyles as GStyles } from '../../src/styles/GlobalStyles';
+import { useState } from 'react';
+import { ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { useAuth } from '../../src/context/AuthContext';
 import { useMapaAstral } from '../../src/hooks/useMapaAstral';
+import { Colors, globalStyles as GStyles } from '../../src/styles/GlobalStyles';
 
 export default function MapaAstralScreen() {
   const { user } = useAuth();
