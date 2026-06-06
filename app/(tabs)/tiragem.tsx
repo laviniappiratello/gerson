@@ -7,6 +7,7 @@ import { INFO_DECKS } from '../../constants/MisticoData';
 import { CIGANO_CARDS, MARSELHA_CARDS, TAROT_CARDS_COMPLETO, type SignoNome } from '../../constants/OraculoData';
 import { useAuth } from '../../src/context/AuthContext';
 import { useTranslation } from '../../src/i18n/useTranslation';
+import { sincronizarBancoDeDados } from '../../src/services/syncService'; // Importação do serviço de sync
 import {
     addReading,
     addThirdPartyReading,
@@ -302,9 +303,10 @@ export default function TiragemScreen() {
     setSelectedReadingId(reading.id);
     setHistoryOpen(true);
     setIsDrawing(false);
+
+    sincronizarBancoDeDados();
   };
 
-  // Funções "Terceiros"
   const fazerTiragemTerceiros = async () => {
     if (!nomeOutraPessoa.trim()) {
       alert(t('tiragem.enterPersonName'));
