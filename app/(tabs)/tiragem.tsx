@@ -14,6 +14,7 @@ import { exportarHistoricoPDF } from '../../src/services/pdfService';
 import * as AuthSession from 'expo-auth-session';
 import { uploadParaDrive } from '../../src/services/driveService';
 import * as WebBrowser from 'expo-web-browser';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 const SIGNOS: SignoNome[] = ['Áries','Touro','Gêmeos','Câncer','Leão','Virgem','Libra','Escorpião','Sagitário','Capricórnio','Aquário','Peixes'];
 
 export default function TiragemScreen() {
@@ -51,14 +52,17 @@ export default function TiragemScreen() {
   const [countMenuOpenTerceiros, setCountMenuOpenTerceiros] = useState(false);
   const [signoMenuOpen, setSignoMenuOpen] = useState(false);
   const [enviando, setEnviando] = useState(false);
-// Substitua o seu useState atual de backupFeito por este:
-// Substitua o seu useState do backupFeito por este:
-const [backupFeito, setBackupFeito] = useState(() => {
-  if (typeof window !== 'undefined' && user?.id) {
-    return localStorage.getItem(`backup_realizado_${user.id}`) === 'true';
-  }
-  return false;
-});const deckOptions: DeckId[] = ['rider-waite', 'cigano', 'marselha'];
+  
+const [backupFeito, setBackupFeito] = useState(false);
+useEffect(() => {
+  const carregarStatus = async () => {
+    if (user?.id) {
+      const status = await AsyncStorage.getItem(`backup_realizado_${user.id}`);
+      setBackupFeito(status === 'true');
+    }
+  };
+  carregarStatus();
+}, [user?.id]);const deckOptions: DeckId[] = ['rider-waite', 'cigano', 'marselha'];
   const countOptions = [1, 2, 3, 4, 5];
   const deckCards: Record<DeckId, typeof TAROT_CARDS_COMPLETO> = { 'rider-waite': TAROT_CARDS_COMPLETO, cigano: CIGANO_CARDS, marselha: MARSELHA_CARDS };
   const allCards = [...TAROT_CARDS_COMPLETO, ...CIGANO_CARDS, ...MARSELHA_CARDS];
@@ -112,19 +116,18 @@ const executarBackup = async (token: string) => {
   
   if (sucesso) {
     setBackupFeito(true);
-    // Salva na chave específica
-    localStorage.setItem(`backup_realizado_${user.id}`, 'true');
+    // Troque localStorage por AsyncStorage
+    await AsyncStorage.setItem(`backup_realizado_${user.id}`, 'true');
     Alert.alert("Sucesso", "Backup enviado com sucesso!");
   } else {
     Alert.alert("Erro", "Falha ao enviar.");
   }
   setEnviando(false);
-};  
+};
 useEffect(() => {
   if (!user?.id) return;
 
   const checkStatus = () => {
-    // IMPORTANTE: Agora ele monitora a chave específica do usuário logado
     const status = localStorage.getItem(`backup_realizado_${user.id}`);
     if (status === 'true') {
       setBackupFeito(true);
@@ -147,13 +150,13 @@ useEffect(() => {
   useEffect(() => { setNoteDraft(leituraSelecionada?.note ?? ''); }, [leituraSelecionada?.id, leituraSelecionada?.note]);
 const iniciarBackup = async () => {
   if (!user?.id) return;
-  // Limpa apenas a chave deste usuário antes de começar
-  localStorage.removeItem(`backup_realizado_${user.id}`); 
+  
+  // Limpa o status anterior direto, sem hooks
+  await AsyncStorage.removeItem(`backup_realizado_${user.id}`); 
   setEnviando(true);
   
   try {
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=360291271962-hvj3vbj49k8d0oa18ehrcucasr5r6lbj.apps.googleusercontent.com&redirect_uri=http://localhost:8081&response_type=token&scope=https://www.googleapis.com/auth/drive.file&prompt=consent`;
-    
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?...`;
     const result = await WebBrowser.openAuthSessionAsync(authUrl, "http://localhost:8081");
 
     if (result.type === 'success') {
@@ -163,13 +166,14 @@ const iniciarBackup = async () => {
       
       if (token) {
         setAccessToken(token);
+        // Chama a função direto, sem useEffect
         await executarBackup(token);
       }
     }
-    setEnviando(false); 
   } catch (error) {
-    setEnviando(false);
     Alert.alert("Erro", "Falha na autenticação.");
+  } finally {
+    setEnviando(false);
   }
 };
   const carregarTerceiros = async () => setTerceiros(await getThirdPartyReadings());

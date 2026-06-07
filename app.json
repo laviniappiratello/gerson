@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Persephone",
-    "slug": "Persephone",
+    "slug": "persephone",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -32,6 +32,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "f29117a9-ea38-4a84-a833-f9027dcc2a3b"
+      }
+    },
+    "owner": "adorochocomentas-team"
   }
 }
