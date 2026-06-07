@@ -45,7 +45,7 @@ export type ThirdPartyReadingRecord = {
   cardCount?: number;
   createdAt: number;
 };
-
+const BACKEND_URL = "https://persefone-backend.onrender.com";
 const USER_KEY = '@persephone/user';
 const USERS_KEY = '@persephone/users';
 const SESSION_KEY = '@persephone/session';
@@ -78,7 +78,18 @@ type RawReading = {
   created_at: number;
   favorite?: boolean;
 };
+export async function syncWithBackend(lastPulledAt: number, localChanges: any) {
+  // 1. PUSH: Envia o que mudou no celular para o Render
+  await fetch(`${BACKEND_URL}/sync`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ changes: localChanges })
+  });
 
+  // 2. PULL: Busca o que mudou no servidor
+  const response = await fetch(`${BACKEND_URL}/sync?lastPulledAt=${lastPulledAt}`);
+  return await response.json();
+}
 function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }

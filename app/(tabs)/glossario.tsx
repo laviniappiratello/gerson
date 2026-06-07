@@ -1,6 +1,6 @@
-import { Text, View } from '@/components/Themed';
+import { Text } from '@/components/Themed';
 import { useEffect, useState } from 'react';
-import { Image, ScrollView, TextInput, TouchableOpacity } from 'react-native';
+import { Image, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { INFO_DECKS } from '../../constants/MisticoData';
 import { CIGANO_CARDS, MARSELHA_CARDS, TAROT_CARDS_COMPLETO } from '../../constants/OraculoData';
 import { useAuth } from '../../src/context/AuthContext';
@@ -8,7 +8,6 @@ import { useTheme } from '../../src/context/ThemeContext';
 import { useFavoriteCards } from '../../src/hooks/useFavoriteCards';
 import { useTranslation } from '../../src/i18n/useTranslation';
 import { makeGlobalStyles, getColors } from '../../src/styles/GlobalStyles';
-import { StyleSheet } from 'react-native';
 
 type DeckKey = keyof typeof INFO_DECKS;
 type GlossaryCard = { id: string | number; nome: string; imagem: any; interpretacaoNormal?: string; interpretacaoInvertida?: string };
@@ -26,7 +25,6 @@ export default function GlossarioScreen() {
   const C = getColors(isLight);
   const GStyles = makeGlobalStyles(isLight);
   const styles = makeStyles(isLight);
-
   const { isFavorited, handleToggleFavorite } = useFavoriteCards(user?.id ?? null);
   const [openDeckId, setOpenDeckId] = useState<DeckKey | null>(null);
   const [selectedCardKey, setSelectedCardKey] = useState<string | null>(null);
@@ -55,10 +53,10 @@ export default function GlossarioScreen() {
       </View>
 
       <TouchableOpacity
-        style={[styles.filterButton, showOnlyFavorites && styles.filterButtonActive]}
+        style={[styles.filterButton, showOnlyFavorites ? styles.filterButtonActive : null]}
         onPress={() => setShowOnlyFavorites((prev) => !prev)}
       >
-        <Text style={[styles.filterButtonText, showOnlyFavorites && styles.filterButtonTextActive]}>
+        <Text style={[styles.filterButtonText, showOnlyFavorites ? styles.filterButtonTextActive : null]}>
           {showOnlyFavorites ? `★ ${t('glossary.onlyFavorites')}` : `☆ ${t('glossary.viewAll')}`}
         </Text>
       </TouchableOpacity>
@@ -72,14 +70,12 @@ export default function GlossarioScreen() {
         const deckTitleMap: Record<DeckKey, string> = { 'rider-waite': t('decks.riderWaite'), cigano: t('decks.cigano'), marselha: t('decks.marselha') };
         const deckSubtitleMap: Record<DeckKey, string> = { 'rider-waite': t('decks.riderWaiteDesc'), cigano: t('decks.ciganoDesc'), marselha: t('decks.marselhaeDesc') };
         const deckOpen = openDeckId === deck.id;
-
         return (
           <View key={deck.id} style={styles.block}>
             <TouchableOpacity style={styles.deckHeader} onPress={() => setOpenDeckId((cur) => (cur === deck.id ? null : deck.id))}>
               <Text style={styles.cardTitle}>{deckOpen ? '▾ ' : '▸ '}{deckTitleMap[deck.id] ?? deckMeta.titulo}</Text>
               <Text style={styles.deckSubtitle}>{deckSubtitleMap[deck.id] ?? deckMeta.subtitulo}</Text>
             </TouchableOpacity>
-
             {deckOpen ? (
               <View style={styles.cardList}>
                 {deck.cards
@@ -98,7 +94,7 @@ export default function GlossarioScreen() {
                             <Text style={styles.cardTitle}>{open ? '▾ ' : '▸ '}{card.nome}</Text>
                           </TouchableOpacity>
                           <TouchableOpacity style={styles.favoriteButton} onPress={() => handleToggleFavorite(deck.id, card.id)}>
-                            <Text style={[styles.favoriteIcon, isFavorited(deck.id, card.id) && styles.favoriteIconActive]}>
+                            <Text style={[styles.favoriteIcon, isFavorited(deck.id, card.id) ? styles.favoriteIconActive : null]}>
                               {isFavorited(deck.id, card.id) ? '★' : '☆'}
                             </Text>
                           </TouchableOpacity>
@@ -121,9 +117,9 @@ export default function GlossarioScreen() {
                       </View>
                     );
                   })}
-                {deck.cards.filter((c) => c.nome.toLowerCase().includes(debouncedSearch)).length === 0 && debouncedSearch && (
+                {deck.cards.filter((c) => c.nome.toLowerCase().includes(debouncedSearch)).length === 0 && debouncedSearch ? (
                   <Text style={styles.noResults}>{t('glossary.noResults', { query: debouncedSearch })}</Text>
-                )}
+                ) : null}
               </View>
             ) : null}
           </View>
@@ -139,7 +135,17 @@ function makeStyles(isLight: boolean) {
   return StyleSheet.create({
     page: { padding: 18, paddingBottom: 56, backgroundColor: C.deepBlue },
     searchBlock: { marginBottom: 16 },
-    searchInput: { backgroundColor: isLight ? 'rgba(255,240,245,0.9)' : 'rgba(18,8,25,0.8)', borderWidth: 1, borderColor: C.panelBorder, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, color: C.gold, fontSize: 15, fontWeight: '500' },
+    searchInput: {
+      backgroundColor: isLight ? 'rgba(255,240,245,0.9)' : 'rgba(18,8,25,0.8)',
+      borderWidth: 1,
+      borderColor: C.panelBorder,
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      color: C.gold,
+      fontSize: 15,
+      fontWeight: '500',
+    },
     kicker: { color: C.gold, textAlign: 'center', letterSpacing: 1, fontSize: 11, opacity: 0.9, marginTop: 6 },
     block: { borderWidth: 1, borderColor: C.panelBorder, borderRadius: 18, padding: 14, marginBottom: 12, backgroundColor: blockBg },
     cardHeader: { backgroundColor: 'transparent', flex: 1 },

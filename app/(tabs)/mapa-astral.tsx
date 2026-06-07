@@ -1,6 +1,6 @@
-import { Text, View } from '@/components/Themed';
+import { Text } from '@/components/Themed';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../../src/context/AuthContext';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useMapaAstral } from '../../src/hooks/useMapaAstral';
@@ -97,7 +97,7 @@ export default function MapaAstralScreen() {
             <Text style={styles.cardTitle}>{section.icon} {section.title}</Text>
             <Text style={styles.toggleIcon}>{expandedSection === section.key ? '▾' : '▸'}</Text>
           </View>
-          {expandedSection === section.key && section.content}
+          {expandedSection === section.key ? section.content : null}
         </TouchableOpacity>
       ))}
 
@@ -106,26 +106,26 @@ export default function MapaAstralScreen() {
           <Text style={styles.cardTitle}>🏠 {t('astralMap.housesSection')}</Text>
           <Text style={styles.toggleIcon}>{expandedSection === 'casas' ? '▾' : '▸'}</Text>
         </View>
-        {expandedSection === 'casas' && (
+        {expandedSection === 'casas' ? (
           <View style={styles.cardContent}>
             <View style={styles.casasGrid}>
               {mapaAstral.casas.map((casa) => (
-                <TouchableOpacity key={casa.numero} style={[styles.casaCard, selectedCasa === casa.numero && styles.casaCardSelected]} onPress={() => setSelectedCasa(selectedCasa === casa.numero ? null : casa.numero)}>
+                <TouchableOpacity key={casa.numero} style={[styles.casaCard, selectedCasa === casa.numero ? styles.casaCardSelected : null]} onPress={() => setSelectedCasa(selectedCasa === casa.numero ? null : casa.numero)}>
                   <Text style={styles.casaNumber}>{casa.numero}</Text>
                   <Text style={styles.casaSigno}>{casa.signo.simbolo}</Text>
                 </TouchableOpacity>
               ))}
             </View>
-            {selectedCasa !== null && mapaAstral.casas.filter((c) => c.numero === selectedCasa).map((casa) => (
+            {selectedCasa !== null ? mapaAstral.casas.filter((c) => c.numero === selectedCasa).map((casa) => (
               <View key={casa.numero} style={styles.casaDetailBox}>
                 <Text style={styles.casaDetailTitle}>{casa.nome}</Text>
                 <Text style={styles.casaDetailSigno}>{translateSign(casa.signo.nome, t)} {casa.signo.simbolo}</Text>
                 <Text style={styles.casaDetailText}>{casa.descricao}</Text>
                 <Text style={styles.casaDetailTema}>{t('astralMap.theme')}: {casa.nome.split(' ')[1]}</Text>
               </View>
-            ))}
+            )) : null}
           </View>
-        )}
+        ) : null}
       </TouchableOpacity>
 
       <View style={styles.infoBox}>

@@ -1,8 +1,7 @@
-import { Text, View } from '@/components/Themed';
+import { Text } from '@/components/Themed';
 import * as Sharing from 'expo-sharing';
 import { useEffect, useRef, useState, type RefObject } from 'react';
-import { Alert, Image, View as NativeView, Platform, ScrollView, TextInput, TouchableOpacity } from 'react-native';
-import { captureRef } from 'react-native-view-shot';
+import { Alert, Image, View, View as NativeView, Platform, ScrollView, TextInput, TouchableOpacity } from 'react-native';import { captureRef } from 'react-native-view-shot';
 import { INFO_DECKS } from '../../constants/MisticoData';
 import { CIGANO_CARDS, MARSELHA_CARDS, TAROT_CARDS_COMPLETO, type SignoNome } from '../../constants/OraculoData';
 import { useAuth } from '../../src/context/AuthContext';
@@ -11,7 +10,10 @@ import { useTranslation } from '../../src/i18n/useTranslation';
 import { addReading, addThirdPartyReading, getReadings, getThirdPartyReadings, makeId, setReadingNote, toggleReadingFavorite, type CardDraw, type DeckId, type ReadingRecord, type ThirdPartyReadingRecord } from '../../src/services/storage';
 import { makeGlobalStyles, getColors } from '../../src/styles/GlobalStyles';
 import { makeTiragemStyles } from '../../src/styles/screens/TiragemScreenStyles';
-
+import { exportarHistoricoPDF } from '../../src/services/pdfService';
+import * as AuthSession from 'expo-auth-session';
+import { uploadParaDrive } from '../../src/services/driveService';
+import * as WebBrowser from 'expo-web-browser';
 const SIGNOS: SignoNome[] = ['Áries','Touro','Gêmeos','Câncer','Leão','Virgem','Libra','Escorpião','Sagitário','Capricórnio','Aquário','Peixes'];
 
 export default function TiragemScreen() {
@@ -21,8 +23,8 @@ export default function TiragemScreen() {
   const styles = makeTiragemStyles(isLight);
   const GStyles = makeGlobalStyles(isLight);
   const C = getColors(isLight);
-
-  const personalReadingRef = useRef<any>(null);
+  const handleExport = async () => {
+  const dados = modo === 'meu' ? readings : terceiros;await exportarHistoricoPDF(dados, t);};  const personalReadingRef = useRef<any>(null);
   const thirdPartyReadingRef = useRef<any>(null);
   const [modo, setModo] = useState<'meu' | 'terceiros'>('meu');
   const [question, setQuestion] = useState('');
@@ -48,14 +50,91 @@ export default function TiragemScreen() {
   const [deckMenuOpenTerceiros, setDeckMenuOpenTerceiros] = useState(false);
   const [countMenuOpenTerceiros, setCountMenuOpenTerceiros] = useState(false);
   const [signoMenuOpen, setSignoMenuOpen] = useState(false);
-
-  const deckOptions: DeckId[] = ['rider-waite', 'cigano', 'marselha'];
+  const [enviando, setEnviando] = useState(false);
+// Substitua o seu useState atual de backupFeito por este:
+// Substitua o seu useState do backupFeito por este:
+const [backupFeito, setBackupFeito] = useState(() => {
+  if (typeof window !== 'undefined' && user?.id) {
+    return localStorage.getItem(`backup_realizado_${user.id}`) === 'true';
+  }
+  return false;
+});const deckOptions: DeckId[] = ['rider-waite', 'cigano', 'marselha'];
   const countOptions = [1, 2, 3, 4, 5];
   const deckCards: Record<DeckId, typeof TAROT_CARDS_COMPLETO> = { 'rider-waite': TAROT_CARDS_COMPLETO, cigano: CIGANO_CARDS, marselha: MARSELHA_CARDS };
   const allCards = [...TAROT_CARDS_COMPLETO, ...CIGANO_CARDS, ...MARSELHA_CARDS];
   const leituraSelecionada = readings.find((i) => i.id === selectedReadingId) ?? null;
   const leituraSelecionadaTerceiros = terceiros.find((i) => i.id === selectedReadingIdTerceiros) ?? null;
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [request, response, promptAsync] = AuthSession.useAuthRequest({
+    clientId: '360291271962-hvj3vbj49k8d0oa18ehrcucasr5r6lbj.apps.googleusercontent.com',
+    scopes: ['https://www.googleapis.com/auth/drive.file'],
+    redirectUri: 'http://localhost:8081',
+    extraParams: { prompt: 'consent select_account' }
+  }, {
+    authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
+    tokenEndpoint: 'https://oauth2.googleapis.com/token'
+  });
+useEffect(() => {
+  const checkStatus = () => {
+    const status = localStorage.getItem('backup_realizado');
+    if (status === 'true') {
+      setBackupFeito(true);
+      setEnviando(false);
+    }
+  };
 
+  // Checa a cada 1 segundo se o backup foi feito na outra guia/popup
+  const interval = setInterval(checkStatus, 1000);
+  return () => clearInterval(interval);
+}, []);
+useEffect(() => {
+  if (response?.type === 'success') {
+    const { access_token } = response.params;
+    setAccessToken(access_token);
+    
+    // Inicia o processo de envio
+    setEnviando(true);
+    
+    // Simula o tempo de upload ou chama sua função real
+    setTimeout(() => {
+      setEnviando(false);
+      setBackupFeito(true);
+      localStorage.setItem('backup_realizado', 'true'); // Persiste que o backup foi feito
+      Alert.alert("Sucesso", "Backup concluído com sucesso!");
+    }, 2000); 
+  }
+}, [response]);
+const executarBackup = async (token: string) => {
+  if (!user?.id) return;
+  
+  setEnviando(true);
+  const sucesso = await uploadParaDrive(token, readings);
+  
+  if (sucesso) {
+    setBackupFeito(true);
+    // Salva na chave específica
+    localStorage.setItem(`backup_realizado_${user.id}`, 'true');
+    Alert.alert("Sucesso", "Backup enviado com sucesso!");
+  } else {
+    Alert.alert("Erro", "Falha ao enviar.");
+  }
+  setEnviando(false);
+};  
+useEffect(() => {
+  if (!user?.id) return;
+
+  const checkStatus = () => {
+    // IMPORTANTE: Agora ele monitora a chave específica do usuário logado
+    const status = localStorage.getItem(`backup_realizado_${user.id}`);
+    if (status === 'true') {
+      setBackupFeito(true);
+      setEnviando(false);
+    }
+  };
+
+  const interval = setInterval(checkStatus, 1000);
+  return () => clearInterval(interval);
+}, [user?.id]);
   useEffect(() => {
     if (!user) { setReadings([]); return; }
     void (async () => { setReadings(await getReadings(user.id)); })();
@@ -66,9 +145,37 @@ export default function TiragemScreen() {
     setSelectedReadingId((cur) => cur && readings.some((i) => i.id === cur) ? cur : null);
   }, [readings]);
   useEffect(() => { setNoteDraft(leituraSelecionada?.note ?? ''); }, [leituraSelecionada?.id, leituraSelecionada?.note]);
+const iniciarBackup = async () => {
+  if (!user?.id) return;
+  // Limpa apenas a chave deste usuário antes de começar
+  localStorage.removeItem(`backup_realizado_${user.id}`); 
+  setEnviando(true);
+  
+  try {
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=360291271962-hvj3vbj49k8d0oa18ehrcucasr5r6lbj.apps.googleusercontent.com&redirect_uri=http://localhost:8081&response_type=token&scope=https://www.googleapis.com/auth/drive.file&prompt=consent`;
+    
+    const result = await WebBrowser.openAuthSessionAsync(authUrl, "http://localhost:8081");
 
+    if (result.type === 'success') {
+      const url = new URL(result.url);
+      const params = new URLSearchParams(url.hash.substring(1));
+      const token = params.get('access_token');
+      
+      if (token) {
+        setAccessToken(token);
+        await executarBackup(token);
+      }
+    }
+    setEnviando(false); 
+  } catch (error) {
+    setEnviando(false);
+    Alert.alert("Erro", "Falha na autenticação.");
+  }
+};
   const carregarTerceiros = async () => setTerceiros(await getThirdPartyReadings());
-  const formatCardLabel = (count: number) => (count === 1 ? `1 ${t('tiragem.card')}` : `${count} cartas`);
+const formatCardLabel = (count: number) => {
+
+  return `${count} ${count === 1 ? t('tiragem.card') : t('tiragem.cards')}`;};
   const getDeckTitle = (deckId?: DeckId) => { const id = deckId ?? 'rider-waite'; switch (id) { case 'rider-waite': return t('decks.riderWaite'); case 'cigano': return t('decks.cigano'); case 'marselha': return t('decks.marselha'); default: return INFO_DECKS['rider-waite'].titulo; } };
   const getDeckSubtitle = (deckId?: DeckId) => { const id = deckId ?? 'rider-waite'; switch (id) { case 'rider-waite': return t('decks.riderWaiteDesc'); case 'cigano': return t('decks.ciganoDesc'); case 'marselha': return t('decks.marselhaeDesc'); default: return INFO_DECKS['rider-waite'].subtitulo; } };
   const translateSign = (signName: SignoNome) => { const map: Record<SignoNome, string> = { Áries:'aries',Touro:'taurus',Gêmeos:'gemini',Câncer:'cancer',Leão:'leo',Virgem:'virgo',Libra:'libra',Escorpião:'scorpio',Sagitário:'sagittarius',Capricórnio:'capricorn',Aquário:'aquarius',Peixes:'pisces' }; return t(`signs.${map[signName]}`); };
@@ -144,136 +251,158 @@ export default function TiragemScreen() {
 
   const placeholderColor = isLight ? 'rgba(194,24,91,0.5)' : '#888';
 
-  if (modo === 'meu') {
-    return (
-      <ScrollView style={styles.container} contentContainerStyle={styles.page}>
-        <Text style={styles.kicker}>✦ ORÁCULO</Text>
-        <Text style={GStyles.title}>{t('tiragem.customDrawTitle')}</Text>
-        <TouchableOpacity style={[GStyles.mainButton, { marginBottom: 20 }]} onPress={() => { setModo('terceiros'); setNomeOutraPessoa(''); setSignoOutraPessoa('Áries'); setQuestionTerceiros(''); }}>
-          <Text style={GStyles.buttonText}>{t('tiragem.drawForMe')}</Text>
+if (modo === 'meu') {
+  return (
+    <ScrollView style={styles.container} contentContainerStyle={styles.page}>
+      <Text style={styles.kicker}>✦ ORÁCULO</Text>
+      <Text style={GStyles.title}>{t('tiragem.customDrawTitle')}</Text>
+      <TouchableOpacity style={[GStyles.mainButton, { marginBottom: 20 }]} onPress={() => { setModo('terceiros'); setNomeOutraPessoa(''); setSignoOutraPessoa('Áries'); setQuestionTerceiros(''); }}>
+        <Text style={GStyles.buttonText}>{t('tiragem.drawForMe')}</Text>
+      </TouchableOpacity>
+
+      <View style={styles.block}>
+        <Text style={styles.blockTitle}>{t('tiragem.title')}</Text>
+        <Text style={styles.selectorLabel}>{t('tiragem.selectDeck')}</Text>
+        <TouchableOpacity style={styles.dropdownButton} onPress={() => { setDeckMenuOpen((c) => !c); setCountMenuOpen(false); }}>
+          <Text style={styles.dropdownTitle}>{deckMenuOpen ? '▴ ' : '▾ '}{selectedDeckTitle}</Text>
         </TouchableOpacity>
+        {deckMenuOpen && <View style={styles.dropdownList}>{deckOptions.map((deckId) => <TouchableOpacity key={deckId} style={[styles.dropdownItem, selectedDeckId === deckId && styles.dropdownItemActive]} onPress={() => { setSelectedDeckId(deckId); setDeckMenuOpen(false); }}><Text style={styles.dropdownItemTitle}>{selectedDeckId === deckId ? '▾ ' : '▸ '}{getDeckTitle(deckId)}</Text><Text style={styles.dropdownItemText}>{getDeckSubtitle(deckId)}</Text></TouchableOpacity>)}</View>}
 
+        <Text style={styles.selectorLabel}>{t('tiragem.selectCardCount')}</Text>
+        <TouchableOpacity style={styles.dropdownButton} onPress={() => { setCountMenuOpen((c) => !c); setDeckMenuOpen(false); }}>
+          <Text style={styles.dropdownTitle}>{countMenuOpen ? '▴ ' : '▾ '}{formatCardLabel(selectedCardCount)}</Text>
+        </TouchableOpacity>
+        {countMenuOpen && <View style={styles.dropdownList}>{countOptions.map((count) => <TouchableOpacity key={count} style={[styles.dropdownItem, selectedCardCount === count && styles.dropdownItemActive]} onPress={() => { setSelectedCardCount(count); setCountMenuOpen(false); }}><Text style={styles.dropdownItemTitle}>{selectedCardCount === count ? '▾ ' : '▸ '}{formatCardLabel(count)}</Text><Text style={styles.dropdownItemText}>{count === 3 ? t('tiragem.pastPresentFuture') : t('tiragem.customDraw')}</Text></TouchableOpacity>)}</View>}
+
+        <TextInput value={question} onChangeText={setQuestion} placeholder={t('tiragem.question')} placeholderTextColor={placeholderColor} style={styles.input} multiline />
+        <TouchableOpacity style={GStyles.mainButton} onPress={fazerTiragem} disabled={isDrawing}>
+          <Text style={GStyles.buttonText}>{isDrawing ? t('tiragem.drawing') : t('tiragem.draw', { count: formatCardLabel(selectedCardCount).toUpperCase() })}</Text>
+        </TouchableOpacity>
+      </View>
+
+      {leituraSelecionada ? (
         <View style={styles.block}>
-          <Text style={styles.blockTitle}>{t('tiragem.title')}</Text>
-          <Text style={styles.selectorLabel}>{t('tiragem.selectDeck')}</Text>
-          <TouchableOpacity style={styles.dropdownButton} onPress={() => { setDeckMenuOpen((c) => !c); setCountMenuOpen(false); }}>
-            <Text style={styles.dropdownTitle}>{deckMenuOpen ? '▴ ' : '▾ '}{selectedDeckTitle}</Text>
-          </TouchableOpacity>
-          {deckMenuOpen && <View style={styles.dropdownList}>{deckOptions.map((deckId) => <TouchableOpacity key={deckId} style={[styles.dropdownItem, selectedDeckId === deckId && styles.dropdownItemActive]} onPress={() => { setSelectedDeckId(deckId); setDeckMenuOpen(false); }}><Text style={styles.dropdownItemTitle}>{selectedDeckId === deckId ? '▾ ' : '▸ '}{getDeckTitle(deckId)}</Text><Text style={styles.dropdownItemText}>{getDeckSubtitle(deckId)}</Text></TouchableOpacity>)}</View>}
-
-          <Text style={styles.selectorLabel}>{t('tiragem.selectCardCount')}</Text>
-          <TouchableOpacity style={styles.dropdownButton} onPress={() => { setCountMenuOpen((c) => !c); setDeckMenuOpen(false); }}>
-            <Text style={styles.dropdownTitle}>{countMenuOpen ? '▴ ' : '▾ '}{formatCardLabel(selectedCardCount)}</Text>
-          </TouchableOpacity>
-          {countMenuOpen && <View style={styles.dropdownList}>{countOptions.map((count) => <TouchableOpacity key={count} style={[styles.dropdownItem, selectedCardCount === count && styles.dropdownItemActive]} onPress={() => { setSelectedCardCount(count); setCountMenuOpen(false); }}><Text style={styles.dropdownItemTitle}>{selectedCardCount === count ? '▾ ' : '▸ '}{formatCardLabel(count)}</Text><Text style={styles.dropdownItemText}>{count === 3 ? t('tiragem.pastPresentFuture') : t('tiragem.customDraw')}</Text></TouchableOpacity>)}</View>}
-
-          <TextInput value={question} onChangeText={setQuestion} placeholder={t('tiragem.question')} placeholderTextColor={placeholderColor} style={styles.input} multiline />
-          <TouchableOpacity style={GStyles.mainButton} onPress={fazerTiragem} disabled={isDrawing}>
-            <Text style={GStyles.buttonText}>{isDrawing ? t('tiragem.drawing') : t('tiragem.draw', { count: formatCardLabel(selectedCardCount).toUpperCase() })}</Text>
+          <NativeView ref={personalReadingRef} collapsable={false} style={{ backgroundColor: captureBg }}>
+            <Text style={styles.blockTitle}>{t('tiragem.title')}</Text>
+            <Text style={styles.questionText}>{t('tiragem.question_label')}: {leituraSelecionada.question}</Text>
+            {leituraSelecionada.cards.map((card, index) => {
+              const base = allCards.find((i) => i.id === card.cardId);
+              if (!base) return null;
+              return (
+                <NativeView key={`${card.cardId}_${index}`} style={styles.card as any}>
+                  <Text style={styles.cardTitle}>{getPositionLabel(index, leituraSelecionada.cardCount ?? selectedCardCount)}: {base.nome} {card.invertida ? '(Invertida)' : '(Normal)'}</Text>
+                  <Image source={base.imagem} style={[styles.readingCardImage, card.invertida && { transform: [{ rotate: '180deg' }] }]} resizeMode="contain" />
+                  <Text style={styles.baseText}>{card.invertida ? base.interpretacaoInvertida : base.interpretacaoNormal}</Text>
+                </NativeView>
+              );
+            })}
+            {(noteDraft.trim() || leituraSelecionada.note) ? (
+              <NativeView style={styles.noteBlock as any}>
+                <Text style={styles.noteTitle}>{t('tiragem.personalNotes')}</Text>
+                <Text style={styles.baseText}>{noteDraft.trim() || leituraSelecionada.note}</Text>
+              </NativeView>
+            ) : null}
+          </NativeView>
+          <View style={styles.noteBlock}>
+            <Text style={styles.noteTitle}>{t('tiragem.personalNotes')}</Text>
+            <TextInput value={noteDraft} onChangeText={setNoteDraft} placeholder={t('tiragem.addNote')} placeholderTextColor={placeholderColor} style={styles.noteInput} multiline />
+            <TouchableOpacity style={GStyles.mainButton} onPress={salvarAnotacao}>
+              <Text style={GStyles.buttonText}>{t('tiragem.saveNote')}</Text>
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity style={[GStyles.mainButton, { marginTop: 12 }]} onPress={() => void compartilharImagem(personalReadingRef, t('tiragem.shareReading'))}>
+            <Text style={GStyles.buttonText}>{t('tiragem.shareReading')}</Text>
           </TouchableOpacity>
         </View>
+      ) : null}
 
-        {leituraSelecionada ? (
-          <View style={styles.block}>
-            <NativeView ref={personalReadingRef} collapsable={false} style={{ backgroundColor: captureBg }}>
-              <Text style={styles.blockTitle}>{t('tiragem.title')}</Text>
-              <Text style={styles.questionText}>{t('tiragem.question_label')}: {leituraSelecionada.question}</Text>
-              {leituraSelecionada.cards.map((card, index) => {
-                const base = allCards.find((i) => i.id === card.cardId);
-                if (!base) return null;
+      {readings.length > 0 ? (
+        <View style={styles.block}>
+          <Text style={styles.blockTitle}>{t('tiragem.history')}</Text>
+          <TouchableOpacity style={styles.dropdownButton} onPress={() => setHistoryOpen((p) => !p)}>
+            <Text style={styles.dropdownTitle}>{historyOpen ? '▴ ' + t('common.close') : '▾ ' + t('common.back')}</Text>
+          </TouchableOpacity>
+          {historyOpen && (
+            <View style={styles.dropdownList}>
+              {readings.some((i) => i.favorite) && (
+                <>
+                  <TouchableOpacity style={[styles.dropdownItem, styles.favoritesSectionButton]} onPress={() => setFavoritesOpen((p) => !p)}>
+                    <Text style={styles.dropdownItemTitle}>{favoritesOpen ? '▾ ' : '▸ '}{t('tiragem.favorites')}</Text>
+                  </TouchableOpacity>
+                  {favoritesOpen && (
+                    <View style={styles.nestedDropdownList}>
+                      {readings.filter((i) => i.favorite).map((item) => {
+                        const label = `Tiragem ${readings.length - readings.indexOf(item)}`;
+                        const active = item.id === leituraSelecionada?.id;
+                        return (
+                          <View key={item.id} style={[styles.dropdownItem, active && styles.dropdownItemActive]}>
+                            <View style={styles.dropdownItemHeader}>
+                              <TouchableOpacity style={styles.dropdownItemMain} onPress={() => setSelectedReadingId((c) => c === item.id ? null : item.id)}>
+                                <Text style={styles.dropdownItemTitle}>{active ? '▾ ' : '▸ '}{label} • {getDeckTitle(item.deckId)} • {item.cardCount ?? item.cards.length} cartas{active ? ` • ${t('tiragem.selected')}` : ''}</Text>
+                                <Text style={styles.dropdownItemText}>{item.cards.map((c) => c.nome).join(' • ')}</Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity style={styles.favoriteButton} onPress={() => void alternarFavorito(item.id)}>
+                                <Text style={[styles.favoriteButtonText, item.favorite && styles.favoriteButtonTextActive]}>{item.favorite ? '★' : '☆'}</Text>
+                              </TouchableOpacity>
+                            </View>
+                            {item.favorite && <Text style={styles.favoriteTag}>{t('tiragem.favorite')}</Text>}
+                          </View>
+                        );
+                      })}
+                    </View>
+                  )}
+                </>
+              )}
+              {readings.filter((i) => !i.favorite).map((item) => {
+                const label = `Tiragem ${readings.length - readings.indexOf(item)}`;
+                const active = item.id === leituraSelecionada?.id;
                 return (
-                  <NativeView key={`${card.cardId}_${index}`} style={styles.card as any}>
-                    <Text style={styles.cardTitle}>{getPositionLabel(index, leituraSelecionada.cardCount ?? selectedCardCount)}: {base.nome} {card.invertida ? '(Invertida)' : '(Normal)'}</Text>
-                    <Image source={base.imagem} style={[styles.readingCardImage, card.invertida && { transform: [{ rotate: '180deg' }] }]} resizeMode="contain" />
-                    <Text style={styles.baseText}>{card.invertida ? base.interpretacaoInvertida : base.interpretacaoNormal}</Text>
-                  </NativeView>
+                  <View key={item.id} style={[styles.dropdownItem, active && styles.dropdownItemActive]}>
+                    <View style={styles.dropdownItemHeader}>
+                      <TouchableOpacity style={styles.dropdownItemMain} onPress={() => setSelectedReadingId((c) => c === item.id ? null : item.id)}>
+                        <Text style={styles.dropdownItemTitle}>{active ? '▾ ' : '▸ '}{label} • {getDeckTitle(item.deckId)}{active ? ` • ${t('tiragem.selected')}` : ''}</Text>
+                        <Text style={styles.dropdownItemText}>{item.cards.map((c) => c.nome).join(' • ')}</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.favoriteButton} onPress={() => void alternarFavorito(item.id)}>
+                        <Text style={[styles.favoriteButtonText, item.favorite && styles.favoriteButtonTextActive]}>{item.favorite ? '★' : '☆'}</Text>
+                      </TouchableOpacity>
+                    </View>
+                    {item.favorite && <Text style={styles.favoriteTag}>{t('tiragem.favorite')}</Text>}
+                  </View>
                 );
               })}
-              {(noteDraft.trim() || leituraSelecionada.note) && (
-                <NativeView style={styles.noteBlock as any}>
-                  <Text style={styles.noteTitle}>{t('tiragem.personalNotes')}</Text>
-                  <Text style={styles.baseText}>{noteDraft.trim() || leituraSelecionada.note}</Text>
-                </NativeView>
-              )}
-            </NativeView>
-            <View style={styles.noteBlock}>
-              <Text style={styles.noteTitle}>{t('tiragem.personalNotes')}</Text>
-              <TextInput value={noteDraft} onChangeText={setNoteDraft} placeholder={t('tiragem.addNote')} placeholderTextColor={placeholderColor} style={styles.noteInput} multiline />
-              <TouchableOpacity style={GStyles.mainButton} onPress={salvarAnotacao}><Text style={GStyles.buttonText}>SALVAR ANOTAÇÃO</Text></TouchableOpacity>
             </View>
-            <TouchableOpacity style={[GStyles.mainButton, { marginTop: 12 }]} onPress={() => void compartilharImagem(personalReadingRef, t('tiragem.shareReading'))}>
-              <Text style={GStyles.buttonText}>{t('tiragem.shareReading')}</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View style={styles.block}><Text style={styles.baseText}>{t('tiragem.noReadings')}</Text></View>
-        )}
-
-        {readings.length > 0 ? (
-          <View style={styles.block}>
-            <Text style={styles.blockTitle}>{t('tiragem.history')}</Text>
-            <TouchableOpacity style={styles.dropdownButton} onPress={() => setHistoryOpen((p) => !p)}>
-              <Text style={styles.dropdownTitle}>{historyOpen ? '▴ ' + t('common.close') : '▾ ' + t('common.back')}</Text>
-            </TouchableOpacity>
-            {historyOpen && (
-              <View style={styles.dropdownList}>
-                {readings.some((i) => i.favorite) && (
-                  <>
-                    <TouchableOpacity style={[styles.dropdownItem, styles.favoritesSectionButton]} onPress={() => setFavoritesOpen((p) => !p)}>
-                      <Text style={styles.dropdownItemTitle}>{favoritesOpen ? '▾ ' : '▸ '}{t('tiragem.favorites')}</Text>
-                    </TouchableOpacity>
-                    {favoritesOpen && (
-                      <View style={styles.nestedDropdownList}>
-                        {readings.filter((i) => i.favorite).map((item) => {
-                          const label = `Tiragem ${readings.length - readings.indexOf(item)}`;
-                          const active = item.id === leituraSelecionada?.id;
-                          return (
-                            <View key={item.id} style={[styles.dropdownItem, active && styles.dropdownItemActive]}>
-                              <View style={styles.dropdownItemHeader}>
-                                <TouchableOpacity style={styles.dropdownItemMain} onPress={() => setSelectedReadingId((c) => c === item.id ? null : item.id)}>
-                                  <Text style={styles.dropdownItemTitle}>{active ? '▾ ' : '▸ '}{label} • {getDeckTitle(item.deckId)} • {item.cardCount ?? item.cards.length} cartas{active ? ` • ${t('tiragem.selected')}` : ''}</Text>
-                                  <Text style={styles.dropdownItemText}>{item.cards.map((c) => c.nome).join(' • ')}</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={styles.favoriteButton} onPress={() => void alternarFavorito(item.id)}>
-                                  <Text style={[styles.favoriteButtonText, item.favorite && styles.favoriteButtonTextActive]}>{item.favorite ? '★' : '☆'}</Text>
-                                </TouchableOpacity>
-                              </View>
-                              {item.favorite && <Text style={styles.favoriteTag}>{t('tiragem.favorite')}</Text>}
-                            </View>
-                          );
-                        })}
-                      </View>
-                    )}
-                  </>
-                )}
-                <Text style={styles.demaisTiragensSectionTitle}>{t('tiragem.noReadings')}</Text>
-                {readings.filter((i) => !i.favorite).map((item) => {
-                  const label = `Tiragem ${readings.length - readings.indexOf(item)}`;
-                  const active = item.id === leituraSelecionada?.id;
-                  return (
-                    <View key={item.id} style={[styles.dropdownItem, active && styles.dropdownItemActive]}>
-                      <View style={styles.dropdownItemHeader}>
-                        <TouchableOpacity style={styles.dropdownItemMain} onPress={() => setSelectedReadingId((c) => c === item.id ? null : item.id)}>
-                          <Text style={styles.dropdownItemTitle}>{active ? '▾ ' : '▸ '}{label} • {getDeckTitle(item.deckId)}{active ? ` • ${t('tiragem.selected')}` : ''}</Text>
-                          <Text style={styles.dropdownItemText}>{item.cards.map((c) => c.nome).join(' • ')}</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.favoriteButton} onPress={() => void alternarFavorito(item.id)}>
-                          <Text style={[styles.favoriteButtonText, item.favorite && styles.favoriteButtonTextActive]}>{item.favorite ? '★' : '☆'}</Text>
-                        </TouchableOpacity>
-                      </View>
-                      {item.favorite && <Text style={styles.favoriteTag}>{t('tiragem.favorite')}</Text>}
-                    </View>
-                  );
-                })}
-              </View>
-            )}
-          </View>
-        ) : (
-          <View style={styles.block}><Text style={styles.baseText}>{t('tiragem.noFavoriteReadings')}</Text></View>
-        )}
-      </ScrollView>
-    );
-  }
+          )}
+<TouchableOpacity 
+  disabled={enviando || backupFeito}
+  style={{
+    marginTop: 20,
+    paddingVertical: 12,
+    borderRadius: 20,
+    alignItems: 'center',
+    backgroundColor: backupFeito ? '#4CAF50' : (isLight ? '#d8749c' : '#6A1B9A'),
+    opacity: (enviando || backupFeito) ? 0.7 : 1,
+  }} 
+  onPress={iniciarBackup}
+>
+  <Text style={{ color: '#fff', fontWeight: 'bold' }}>
+    {enviando ? "Enviando..." : (backupFeito ? "Backup Concluído!" : "Salvar Backup no Google Drive")}
+  </Text>
+</TouchableOpacity>
+          <TouchableOpacity 
+            style={[GStyles.mainButton, {backgroundColor: isLight ? '#eca1bf' : '#6A1B9A', marginTop: 20}]} 
+            onPress={handleExport}
+          >
+            <Text style={GStyles.buttonText}>Baixar Histórico em PDF</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View style={styles.block}><Text style={styles.baseText}>{t('tiragem.noFavoriteReadings')}</Text></View>
+      )}
+      
+    </ScrollView>
+  );
+}
 
   // MODO TERCEIROS
   return (

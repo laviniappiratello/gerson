@@ -1,6 +1,6 @@
-import { Text, View } from '@/components/Themed';
+import { Text } from '@/components/Themed';
 import { useState } from 'react';
-import { Image, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { CIGANO_CARDS, MARSELHA_CARDS, TAROT_CARDS_COMPLETO } from '../../constants/OraculoData';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useRituais } from '../../src/hooks/useRituais';
@@ -33,7 +33,7 @@ export default function RituaisScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.page}>
-      {phaseInfo && (
+      {phaseInfo ? (
         <View style={styles.lunarHeader}>
           <Text style={styles.lunarEmoji}>{phaseInfo.emoji}</Text>
           <Text style={styles.lunarTitle}>{translatedPhaseName}</Text>
@@ -54,7 +54,7 @@ export default function RituaisScreen() {
             </View>
           </View>
         </View>
-      )}
+      ) : null}
 
       <Text style={styles.sectionTitle}>{t('rituals.forThisPhase')}</Text>
 
@@ -62,7 +62,7 @@ export default function RituaisScreen() {
         const isExpanded = expandedRitualId === ritual.id;
         const isCompleted = completedRituais.has(ritual.id);
         return (
-          <View key={ritual.id} style={[styles.ritualCard, isExpanded && styles.ritualCardExpanded]}>
+          <View key={ritual.id} style={[styles.ritualCard, isExpanded ? styles.ritualCardExpanded : null]}>
             <TouchableOpacity style={styles.ritualHeader} onPress={() => handleToggleRitual(ritual.id)}>
               <View style={styles.ritualHeaderLeft}>
                 <Text style={styles.ritualToggle}>{isExpanded ? '▾' : '▸'}</Text>
@@ -76,7 +76,7 @@ export default function RituaisScreen() {
               </View>
             </TouchableOpacity>
 
-            {isExpanded && (
+            {isExpanded ? (
               <View style={styles.ritualContent}>
                 <Text style={styles.ritualDescription}>{ritual.description}</Text>
                 <View style={styles.infoRow}>
@@ -95,14 +95,14 @@ export default function RituaisScreen() {
                         <View style={styles.stepNumber}><Text style={styles.stepNumberText}>{step.order}</Text></View>
                         <View style={styles.stepTitleContainer}>
                           <Text style={styles.stepTitle}>{step.title}</Text>
-                          {step.duration && <Text style={styles.stepDuration}>{step.duration}</Text>}
+                          {step.duration ? <Text style={styles.stepDuration}>{step.duration}</Text> : null}
                         </View>
                       </View>
                       <Text style={styles.stepDescription}>{step.description}</Text>
                     </View>
                   ))}
                 </View>
-                {ritual.suggestedCards && ritual.suggestedCards.length > 0 && (
+                {ritual.suggestedCards && ritual.suggestedCards.length > 0 ? (
                   <View style={styles.section}>
                     <Text style={styles.sectionSubtitle}>{t('rituals.suggestedCards')}</Text>
                     <View style={styles.cardsGrid}>
@@ -117,35 +117,35 @@ export default function RituaisScreen() {
                       })}
                     </View>
                   </View>
-                )}
+                ) : null}
                 <View style={styles.section}>
                   <Text style={styles.sectionSubtitle}>{t('rituals.benefits')}</Text>
                   {ritual.benefits.map((b, i) => <View key={i} style={styles.listItem}><Text style={styles.listItemText}>✓ {b}</Text></View>)}
                 </View>
-                {ritual.affirmation && (
+                {ritual.affirmation ? (
                   <View style={styles.affirmationBox}>
                     <Text style={styles.affirmationLabel}>{t('rituals.ritualAffirmation')}</Text>
                     <Text style={styles.affirmationText}>"{ritual.affirmation}"</Text>
                   </View>
-                )}
-                <TouchableOpacity style={[styles.completeButton, isCompleted && styles.completeButtonActive]} onPress={() => handleCompleteRitual(ritual.id)}>
+                ) : null}
+                <TouchableOpacity style={[styles.completeButton, isCompleted ? styles.completeButtonActive : null]} onPress={() => handleCompleteRitual(ritual.id)}>
                   <Text style={styles.completeButtonText}>{isCompleted ? t('rituals.ritualCompleted') : t('rituals.completeRitual')}</Text>
                 </TouchableOpacity>
               </View>
-            )}
+            ) : null}
           </View>
         );
       }) : (
         <View style={styles.emptyState}><Text style={styles.emptyStateText}>{t('rituals.noPhaseRituals')}</Text></View>
       )}
 
-      {completedRituais.size > 0 && (
+      {completedRituais.size > 0 ? (
         <View style={styles.summaryBox}>
           <Text style={styles.summaryTitle}>{t('rituals.completedRituals')}</Text>
           <Text style={styles.summaryCount}>{completedRituais.size} de {rituaisPorFase.length}</Text>
           <Text style={styles.summaryText}>{t('rituals.summaryMessage')}</Text>
         </View>
-      )}
+      ) : null}
     </ScrollView>
   );
 }
