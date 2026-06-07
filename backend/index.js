@@ -1,8 +1,22 @@
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const { Pool } = require('pg');
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
+
+// Função de inicialização corrigida
 async function inicializarBancoDeDados() {
   try {
-    console.log('🔮 Verificando e garantindo tabelas no Render...');
+    console.log('🔮 Verificando tabelas no Render...');
     
-    // Adicionando created_at que faltava na tabela users
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id VARCHAR(255) PRIMARY KEY,
@@ -13,12 +27,11 @@ async function inicializarBancoDeDados() {
         signo VARCHAR(255) NOT NULL,
         arcano VARCHAR(255) NOT NULL,
         biometrics_enabled BOOLEAN DEFAULT FALSE,
-        created_at BIGINT NOT NULL, 
-        updated_at BIGINT NOT NULL
+        created_at BIGINT, 
+        updated_at BIGINT
       );
     `);
 
-    // A tabela readings já parece estar completa com created_at e updated_at
     await pool.query(`
       CREATE TABLE IF NOT EXISTS readings (
         id VARCHAR(255) PRIMARY KEY,
@@ -28,13 +41,29 @@ async function inicializarBancoDeDados() {
         deck_id VARCHAR(255) NOT NULL,
         card_count INT NOT NULL,
         note TEXT DEFAULT '',
-        created_at BIGINT NOT NULL,
+        created_at BIGINT,
         favorite BOOLEAN DEFAULT FALSE,
-        updated_at BIGINT NOT NULL
+        updated_at BIGINT
       );
     `);
-    console.log('Tabelas estruturadas com sucesso!');
+    console.log('Tabelas verificadas/criadas com sucesso!');
   } catch (err) {
-    console.error('Erro ao inicializar:', err.message);
+    console.error(' Erro ao inicializar tabelas:', err.message);
   }
 }
+
+// Rota de teste
+app.get('/', (req, res) => {
+  res.send('Servidor Persefone está online!');
+});
+
+// Sincronização e outros endpoints...
+// [Adicione seus app.get('/sync') e app.post('/sync') aqui]
+
+// Inicializa o banco e sobe o servidor
+inicializarBancoDeDados().then(() => {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀Servidor rodando na porta ${PORT}!`);
+  });
+});
