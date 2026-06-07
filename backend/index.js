@@ -48,10 +48,30 @@ async function inicializarBancoDeDados() {
     `);
     console.log('Tabelas verificadas/criadas com sucesso!');
   } catch (err) {
-    console.error(' Erro ao inicializar tabelas:', err.message);
+    console.error('Erro ao inicializar tabelas:', err.message);
   }
 }
+app.get('/sync', async (req, res) => {
+  const lastPulledAt = parseInt(req.query.lastPulledAt);
+  try {
+    const users = await pool.query('SELECT * FROM users WHERE updated_at > $1', [lastPulledAt]);
+    const readings = await pool.query('SELECT * FROM readings WHERE updated_at > $1', [lastPulledAt]);
+    res.json({
+      changes: {
+        users: { created: users.rows, updated: [], deleted: [] },
+        readings: { created: readings.rows, updated: [], deleted: [] }
+      },
+      timestamp: Date.now()
+    });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
 
+app.post('/sync', async (req, res) => {
+  const { changes } = req.body;
+  const serverTimestamp = Date.now();
+  // Aqui você faria os INSERTs ou UPDATEs no Postgres com base no objeto 'changes'
+  res.json({ status: 'ok', timestamp: serverTimestamp });
+});
 // Rota de teste
 app.get('/', (req, res) => {
   res.send('Servidor Persefone está online!');
@@ -64,6 +84,6 @@ app.get('/', (req, res) => {
 inicializarBancoDeDados().then(() => {
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀Servidor rodando na porta ${PORT}!`);
+    console.log(`🚀 Servidor rodando na porta ${PORT}!`);
   });
 });
